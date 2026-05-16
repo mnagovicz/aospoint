@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { MapPin, Users, Trophy, Plus, Download, CheckCircle, XCircle } from 'lucide-react';
 import {
   type Event, type Checkpoint, type Competitor,
   listCheckpoints, createCheckpoint,
@@ -14,6 +15,36 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+const cpIcon = new L.DivIcon({
+  html: `<div style="
+    width:24px;height:24px;
+    background:#7c3aed;
+    border:2px solid #fff;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:white;font-weight:700;
+    box-shadow:0 0 10px rgba(124,58,237,0.5);
+  ">•</div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  className: '',
+});
+
+const cpNewIcon = new L.DivIcon({
+  html: `<div style="
+    width:24px;height:24px;
+    background:#f59e0b;
+    border:2px solid #fff;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;
+    box-shadow:0 0 10px rgba(245,158,11,0.5);
+  ">+</div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  className: '',
 });
 
 type Tab = 'checkpoints' | 'competitors' | 'results';
@@ -117,102 +148,160 @@ export default function EventDetail({ event, onBack }: Props) {
     a.href = url; a.download = `aospoint-${event.name}-results.csv`; a.click();
   };
 
-  const inputStyle = { background: '#16213e', border: '2px solid #0f3460', color: '#fff' };
-
   return (
-    <div className="min-h-screen" style={{ background: '#1a1a2e' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       {/* Header */}
-      <div className="p-4" style={{ background: '#16213e', borderBottom: '1px solid #0f3460' }}>
-        <button onClick={onBack} className="text-gray-400 mb-2 text-sm">← Zpět</button>
-        <div className="flex items-start justify-between">
+      <div
+        style={{
+          background: 'var(--bg-secondary)',
+          borderBottom: '1px solid var(--border)',
+          padding: '16px 20px',
+        }}
+      >
+        <button
+          onClick={onBack}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-secondary)',
+            fontSize: 13,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            marginBottom: 10,
+            padding: 0,
+          }}
+        >
+          ← Zpět
+        </button>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <h2 className="text-xl font-bold text-white">{event.name}</h2>
-            <p className="text-gray-400 text-sm">{event.date}</p>
+            <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em' }}>{event.name}</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>{event.date}</p>
           </div>
           {event.accessCode && (
-            <div className="text-right">
-              <div className="text-xs text-gray-500">Kód pro závodníky</div>
-              <div className="text-xl font-mono font-bold" style={{ color: '#4ecca3' }}>{event.accessCode}</div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Kód závodníků
+              </div>
+              <div
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: 20,
+                  fontWeight: 800,
+                  letterSpacing: '0.1em',
+                  color: 'var(--accent-bright)',
+                  background: 'var(--accent-glow)',
+                  border: '1px solid rgba(124,58,237,0.3)',
+                  borderRadius: 10,
+                  padding: '4px 12px',
+                }}
+              >
+                {event.accessCode}
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b" style={{ borderColor: '#0f3460' }}>
-        {(['checkpoints', 'competitors', 'results'] as Tab[]).map(t => (
+      {/* Tab bar */}
+      <div className="tab-bar" style={{ maxWidth: 'none' }}>
+        {([
+          { key: 'checkpoints', icon: <MapPin size={14} />, label: 'Checkpointy' },
+          { key: 'competitors', icon: <Users size={14} />, label: 'Závodníci' },
+          { key: 'results', icon: <Trophy size={14} />, label: 'Výsledky' },
+        ] as const).map(t => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className="flex-1 py-3 text-sm font-medium"
-            style={{
-              color: tab === t ? '#4ecca3' : '#6b7280',
-              borderBottom: tab === t ? '2px solid #4ecca3' : '2px solid transparent',
-            }}
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`tab-item ${tab === t.key ? 'active' : ''}`}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
-            {t === 'checkpoints' ? '📍 Checkpointy' : t === 'competitors' ? '🚗 Závodníci' : '🏆 Výsledky'}
+            {t.icon}
+            {t.label}
           </button>
         ))}
       </div>
 
-      <div className="p-4 max-w-2xl mx-auto">
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px' }}>
+
         {/* CHECKPOINTS TAB */}
         {tab === 'checkpoints' && (
           <div>
-            <p className="text-gray-400 text-sm mb-3">Klikněte na mapu pro přidání kontrolního bodu</p>
-            <div style={{ height: '300px', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
-              <MapContainer center={[49.2, 17.7]} zoom={12} style={{ height: '100%' }}>
-                <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>
+              Klikněte na mapu pro přidání kontrolního bodu
+            </p>
+            <div
+              style={{
+                height: 280,
+                borderRadius: 16,
+                overflow: 'hidden',
+                border: '1px solid var(--border)',
+                marginBottom: 16,
+              }}
+            >
+              <MapContainer center={[49.2, 17.7]} zoom={12} style={{ height: '100%' }} zoomControl={false}>
+                <TileLayer
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+                />
                 <MapClickHandler onMapClick={handleMapClick} />
                 {checkpoints.map((cp) => (
                   <div key={cp.id}>
-                    <Marker position={[cp.lat, cp.lng]}>
-                    </Marker>
-                    <Circle center={[cp.lat, cp.lng]} radius={cp.radius}
-                      pathOptions={{ color: '#4ecca3', fillOpacity: 0.2 }} />
+                    <Marker position={[cp.lat, cp.lng]} icon={cpIcon} />
+                    <Circle
+                      center={[cp.lat, cp.lng]}
+                      radius={cp.radius}
+                      pathOptions={{ color: '#7c3aed', fillColor: '#7c3aed', fillOpacity: 0.15, weight: 2 }}
+                    />
                   </div>
                 ))}
                 {cpForm && (
-                  <Marker position={[cpForm.lat, cpForm.lng]} opacity={0.6} />
+                  <Marker position={[cpForm.lat, cpForm.lng]} icon={cpNewIcon} />
                 )}
               </MapContainer>
             </div>
 
             {cpForm && (
-              <div className="p-4 rounded-xl mb-4" style={{ background: '#16213e', border: '1px solid #0f3460' }}>
-                <h3 className="font-bold text-white mb-3">Nový checkpoint ({cpForm.lat.toFixed(5)}, {cpForm.lng.toFixed(5)})</h3>
-                <div className="space-y-3">
+              <div className="card" style={{ marginBottom: 16 }}>
+                <h3 style={{ fontWeight: 700, marginBottom: 14, fontSize: 14, color: 'var(--text-secondary)' }}>
+                  Nový checkpoint — {cpForm.lat.toFixed(5)}, {cpForm.lng.toFixed(5)}
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <input
                     type="text"
                     value={cpForm.name}
                     onChange={e => setCpForm({ ...cpForm, name: e.target.value })}
                     placeholder="Název (např. Rozcestí pod kopcem)"
-                    className="w-full px-3 py-3 rounded-lg"
-                    style={inputStyle}
+                    className="input-field"
+                    autoFocus
                   />
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm text-gray-400 whitespace-nowrap">Radius (m):</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <label style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                      Radius (m)
+                    </label>
                     <input
                       type="number"
                       value={cpForm.radius}
                       onChange={e => setCpForm({ ...cpForm, radius: parseInt(e.target.value) || 50 })}
-                      className="flex-1 px-3 py-3 rounded-lg"
-                      style={inputStyle}
+                      className="input-field"
+                      style={{ flex: 1 }}
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div style={{ display: 'flex', gap: 10 }}>
                     <button
                       onClick={handleSaveCheckpoint}
                       disabled={cpSaving || !cpForm.name}
-                      className="flex-1 py-3 rounded-lg font-bold"
-                      style={{ background: '#4ecca3', color: '#1a1a2e' }}
+                      className="btn-primary"
+                      style={{ minHeight: 44, flex: 1, fontSize: 14, padding: '12px' }}
                     >
                       {cpSaving ? 'Ukládám...' : '✓ Uložit'}
                     </button>
                     <button
                       onClick={() => setCpForm(null)}
-                      className="px-4 py-3 rounded-lg"
-                      style={{ background: '#374151', color: '#fff' }}
+                      className="btn-secondary"
+                      style={{ minHeight: 44, padding: '12px 20px', width: 'auto', flex: '0 0 auto' }}
                     >
                       Zrušit
                     </button>
@@ -221,21 +310,51 @@ export default function EventDetail({ event, onBack }: Props) {
               </div>
             )}
 
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {checkpoints.map((cp, i) => (
-                <div key={cp.id} className="flex items-center gap-3 p-3 rounded-xl"
-                  style={{ background: '#16213e' }}>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                    style={{ background: '#0f3460', color: '#4ecca3' }}>
+                <div
+                  key={cp.id}
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      background: 'var(--accent-glow)',
+                      border: '1px solid rgba(124,58,237,0.3)',
+                      borderRadius: 999,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: 'var(--accent-bright)',
+                      flexShrink: 0,
+                    }}
+                  >
                     {i + 1}
                   </div>
-                  <div className="flex-1">
-                    <div className="text-white font-medium">{cp.name}</div>
-                    <div className="text-xs text-gray-500">{cp.lat.toFixed(5)}, {cp.lng.toFixed(5)} • r={cp.radius}m</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{cp.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                      {cp.lat.toFixed(5)}, {cp.lng.toFixed(5)} · r={cp.radius}m
+                    </div>
                   </div>
                 </div>
               ))}
-              {checkpoints.length === 0 && <p className="text-gray-500 text-center py-4">Žádné checkpointy</p>}
+              {checkpoints.length === 0 && (
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0', fontSize: 14 }}>
+                  Žádné checkpointy — klikněte na mapu
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -243,46 +362,116 @@ export default function EventDetail({ event, onBack }: Props) {
         {/* COMPETITORS TAB */}
         {tab === 'competitors' && (
           <div>
-            <div className="p-4 rounded-xl mb-4" style={{ background: '#16213e', border: '1px solid #0f3460' }}>
-              <h3 className="font-bold text-white mb-3">Přidat závodníka</h3>
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <input type="text" value={compNumber} onChange={e => setCompNumber(e.target.value)}
-                    placeholder="Číslo" className="w-20 px-3 py-3 rounded-lg" style={inputStyle} />
-                  <input type="text" value={compName} onChange={e => setCompName(e.target.value)}
-                    placeholder="Jméno závodníka" className="flex-1 px-3 py-3 rounded-lg" style={inputStyle} />
+            <div className="card" style={{ marginBottom: 16 }}>
+              <h3
+                style={{
+                  fontWeight: 700,
+                  marginBottom: 14,
+                  fontSize: 13,
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Přidat závodníka
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <input
+                    type="text"
+                    value={compNumber}
+                    onChange={e => setCompNumber(e.target.value)}
+                    placeholder="Číslo"
+                    className="input-field"
+                    style={{ width: 80, flex: '0 0 auto' }}
+                  />
+                  <input
+                    type="text"
+                    value={compName}
+                    onChange={e => setCompName(e.target.value)}
+                    placeholder="Jméno závodníka"
+                    className="input-field"
+                    style={{ flex: 1 }}
+                  />
                 </div>
-                <input type="text" value={compVehicle} onChange={e => setCompVehicle(e.target.value)}
-                  placeholder="Vozidlo (volitelné)" className="w-full px-3 py-3 rounded-lg" style={inputStyle} />
+                <input
+                  type="text"
+                  value={compVehicle}
+                  onChange={e => setCompVehicle(e.target.value)}
+                  placeholder="Vozidlo (volitelné)"
+                  className="input-field"
+                />
                 <button
                   onClick={handleAddCompetitor}
                   disabled={compSaving || !compName || !compNumber}
-                  className="w-full py-3 rounded-lg font-bold"
-                  style={{ background: '#4ecca3', color: '#1a1a2e', minHeight: '52px' }}
+                  className="btn-primary"
+                  style={{ minHeight: 48, fontSize: 14 }}
                 >
-                  {compSaving ? 'Přidávám...' : '+ Přidat závodníka'}
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <Plus size={16} />
+                    {compSaving ? 'Přidávám...' : 'Přidat závodníka'}
+                  </span>
                 </button>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(competitors as Competitor[]).map(comp => (
-                <div key={comp.id} className="p-3 rounded-xl" style={{ background: '#16213e' }}>
-                  <div className="flex items-center justify-between">
+                <div
+                  key={comp.id}
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span
+                      style={{
+                        fontFamily: 'monospace',
+                        fontWeight: 700,
+                        color: 'var(--accent-bright)',
+                        fontSize: 14,
+                      }}
+                    >
+                      #{comp.number}
+                    </span>
                     <div>
-                      <span className="font-mono font-bold" style={{ color: '#4ecca3' }}>#{comp.number}</span>
-                      <span className="text-white ml-2">{comp.name}</span>
-                      {comp.vehicle && <span className="text-gray-400 ml-2 text-sm">• {comp.vehicle}</span>}
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{comp.name}</div>
+                      {comp.vehicle && (
+                        <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 1 }}>
+                          {comp.vehicle}
+                        </div>
+                      )}
                     </div>
-                    {comp.accessCode && (
-                      <div className="text-xs font-mono px-2 py-1 rounded" style={{ background: '#0f3460', color: '#4ecca3' }}>
-                        {comp.accessCode}
-                      </div>
-                    )}
                   </div>
+                  {comp.accessCode && (
+                    <span
+                      style={{
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        background: 'var(--accent-glow)',
+                        color: 'var(--accent-bright)',
+                        border: '1px solid rgba(124,58,237,0.2)',
+                        borderRadius: 8,
+                        padding: '3px 10px',
+                      }}
+                    >
+                      {comp.accessCode}
+                    </span>
+                  )}
                 </div>
               ))}
-              {competitors.length === 0 && <p className="text-gray-500 text-center py-4">Žádní závodníci</p>}
+              {competitors.length === 0 && (
+                <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0', fontSize: 14 }}>
+                  Žádní závodníci
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -291,50 +480,143 @@ export default function EventDetail({ event, onBack }: Props) {
         {tab === 'results' && (
           <div>
             {!results ? (
-              <div className="text-center text-gray-400 py-8">Načítám výsledky...</div>
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px 0', fontSize: 14 }}>
+                Načítám výsledky...
+              </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-gray-400">{results.results?.length || 0} závodníků</div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 16,
+                  }}
+                >
+                  <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                    {results.results?.length || 0} závodníků
+                  </div>
                   <button
                     onClick={exportCSV}
-                    className="px-3 py-2 rounded-lg text-sm font-medium"
-                    style={{ background: '#0f3460', color: '#4ecca3' }}
+                    style={{
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 10,
+                      padding: '8px 14px',
+                      color: 'var(--text-secondary)',
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'border-color 0.2s',
+                    }}
                   >
-                    📥 Export CSV
+                    <Download size={14} />
+                    Export CSV
                   </button>
                 </div>
-                <div className="space-y-3">
-                  {(results.results || []).map((r: any, idx: number) => (
-                    <div key={r.competitor.id} className="p-4 rounded-xl" style={{ background: '#16213e' }}>
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold"
-                          style={{ background: idx < 3 ? ['#f59e0b', '#6b7280', '#b45309'][idx] : '#374151', color: '#fff', fontSize: '12px' }}>
-                          {idx + 1}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {(results.results || []).map((r: any, idx: number) => {
+                    const medalColors = ['#f59e0b', '#9ca3af', '#b45309'];
+                    return (
+                      <div
+                        key={r.competitor.id}
+                        className="card"
+                        style={{ padding: '16px 18px' }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            marginBottom: 12,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 999,
+                              background: idx < 3 ? medalColors[idx] : 'var(--bg-tertiary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 700,
+                              fontSize: 13,
+                              color: idx < 3 ? '#fff' : 'var(--text-muted)',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {idx + 1}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 700, fontSize: 15 }}>
+                              <span style={{ color: 'var(--accent-bright)' }}>#{r.competitor.number}</span>{' '}
+                              {r.competitor.name}
+                            </div>
+                            {r.competitor.vehicle && (
+                              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 1 }}>
+                                {r.competitor.vehicle}
+                              </div>
+                            )}
+                          </div>
+                          <div
+                            className="tabular-nums"
+                            style={{ textAlign: 'right', fontWeight: 700, fontSize: 20 }}
+                          >
+                            <span style={{ color: 'var(--success)' }}>{r.recordedCount}</span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>/{r.totalCheckpoints}</span>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="font-bold text-white">#{r.competitor.number} {r.competitor.name}</div>
-                          {r.competitor.vehicle && <div className="text-xs text-gray-500">{r.competitor.vehicle}</div>}
-                        </div>
-                        <div className="text-right">
-                          <span style={{ color: '#4ecca3' }} className="font-bold">{r.recordedCount}</span>
-                          <span className="text-gray-500">/{r.totalCheckpoints}</span>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                          {r.checkpointDetails.map((cd: any, i: number) => (
+                            <div
+                              key={cd.checkpoint.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                padding: '8px 0',
+                                borderTop: i === 0 ? `1px solid var(--border)` : `1px solid var(--border)`,
+                                fontSize: 13,
+                              }}
+                            >
+                              {cd.passage?.action === 'recorded' ? (
+                                <CheckCircle size={15} color="var(--success)" />
+                              ) : cd.passage ? (
+                                <XCircle size={15} color="var(--danger)" />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: 15,
+                                    height: 15,
+                                    borderRadius: 999,
+                                    border: '1.5px solid var(--text-muted)',
+                                    flexShrink: 0,
+                                  }}
+                                />
+                              )}
+                              <span style={{ color: 'var(--text-secondary)', flex: 1 }}>
+                                {cd.checkpoint.name}
+                              </span>
+                              {cd.passage?.action === 'recorded' && (
+                                <span
+                                  className="tabular-nums"
+                                  style={{ color: 'var(--text-muted)', fontSize: 12 }}
+                                >
+                                  {new Date(cd.passage.timestamp).toLocaleTimeString('cs-CZ')}
+                                </span>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      {r.checkpointDetails.map((cd: any) => (
-                        <div key={cd.checkpoint.id} className="flex items-center gap-2 py-1 border-t text-sm"
-                          style={{ borderColor: '#0f3460' }}>
-                          <span>{cd.passage?.action === 'recorded' ? '✅' : cd.passage ? '❌' : '⬜'}</span>
-                          <span className="text-gray-400">{cd.checkpoint.name}</span>
-                          {cd.passage?.action === 'recorded' && (
-                            <span className="ml-auto text-xs text-gray-500">
-                              {new Date(cd.passage.timestamp).toLocaleTimeString('cs-CZ')}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}

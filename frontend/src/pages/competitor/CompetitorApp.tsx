@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Wifi, WifiOff } from 'lucide-react';
 import { listEvents, listCheckpoints, listCompetitors, type Checkpoint } from '../../api';
 import { saveSession, loadSession, saveCheckpoints, loadCheckpoints } from '../../utils/storage';
 import RacingScreen from './RacingScreen';
@@ -86,65 +87,167 @@ export default function CompetitorApp() {
 
   if (screen === 'login') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: '#1a1a2e' }}>
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">📍</div>
-            <h1 className="text-3xl font-bold" style={{ color: '#4ecca3' }}>AosPoint</h1>
-            <p className="text-gray-400 mt-2">Orientační soutěže</p>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center p-5"
+        style={{ background: 'var(--bg-primary)' }}
+      >
+        <div style={{ width: '100%', maxWidth: '420px' }}>
+          {/* Logo area */}
+          <div className="text-center mb-10">
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                background: 'var(--accent-glow)',
+                border: '1px solid rgba(124,58,237,0.3)',
+                borderRadius: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px',
+                fontSize: 32,
+              }}
+            >
+              🏎️
+            </div>
+            <h1
+              style={{
+                fontSize: 32,
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                color: 'var(--text-primary)',
+              }}
+            >
+              AosPoint
+            </h1>
+            <p style={{ color: 'var(--text-secondary)', marginTop: 6, fontSize: 15 }}>
+              Automobilová orientace
+            </p>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Kód eventu</label>
-              <input
-                type="text"
-                value={eventCode}
-                onChange={e => setEventCode(e.target.value.toUpperCase())}
-                placeholder="např. ABC123"
-                className="w-full px-4 py-4 rounded-xl text-white text-lg font-mono"
-                style={{ background: '#16213e', border: '2px solid #0f3460' }}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Závodní číslo</label>
-              <input
-                type="text"
-                value={raceNumber}
-                onChange={e => setRaceNumber(e.target.value)}
-                placeholder="např. 42"
-                className="w-full px-4 py-4 rounded-xl text-white text-lg"
-                style={{ background: '#16213e', border: '2px solid #0f3460' }}
-                onKeyDown={e => e.key === 'Enter' && handleLogin()}
-              />
-            </div>
-
-            {error && (
-              <div className="px-4 py-3 rounded-xl text-red-400 text-sm" style={{ background: '#2a1a1a' }}>
-                {error}
+          {/* Form card */}
+          <div className="card" style={{ padding: '28px 24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginBottom: 8,
+                  }}
+                >
+                  Kód eventu
+                </label>
+                <input
+                  type="text"
+                  value={eventCode}
+                  onChange={e => setEventCode(e.target.value.toUpperCase())}
+                  placeholder="např. ABC123"
+                  className="input-field"
+                  style={{ fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: 600 }}
+                />
               </div>
-            )}
 
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginBottom: 8,
+                  }}
+                >
+                  Závodní číslo
+                </label>
+                <input
+                  type="text"
+                  value={raceNumber}
+                  onChange={e => setRaceNumber(e.target.value)}
+                  placeholder="např. 42"
+                  className="input-field"
+                  onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                />
+              </div>
+
+              {error && (
+                <div
+                  style={{
+                    background: 'var(--danger-glow)',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    borderRadius: 12,
+                    padding: '12px 16px',
+                    color: 'var(--danger)',
+                    fontSize: 14,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <WifiOff size={16} />
+                  {error}
+                </div>
+              )}
+
+              <button
+                onClick={handleLogin}
+                disabled={loading}
+                className="btn-primary"
+                style={{ marginTop: 4, minHeight: 56 }}
+              >
+                {loading ? (
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span>
+                    Připojuji se...
+                  </span>
+                ) : (
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <Wifi size={18} />
+                    PŘIPOJIT SE
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="text-center" style={{ marginTop: 24 }}>
             <button
-              onClick={handleLogin}
-              disabled={loading}
-              className="w-full py-4 rounded-xl text-white font-bold text-lg"
-              style={{ background: loading ? '#0f3460' : '#4ecca3', color: loading ? '#fff' : '#1a1a2e', minHeight: '64px' }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                fontSize: 13,
+                cursor: 'pointer',
+                transition: 'color 0.2s',
+              }}
+              onClick={() => {
+                window.history.pushState({}, '', '/admin');
+                location.reload();
+              }}
+              onMouseOver={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+              onMouseOut={e => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
-              {loading ? 'Načítám...' : 'Přihlásit se'}
+              Pořadatel →
             </button>
           </div>
 
-          <div className="text-center mt-6">
-            <a
-              href="/admin"
-              className="text-sm"
-              style={{ color: '#0f3460' }}
-              onClick={e => { e.preventDefault(); window.history.pushState({}, '', '/admin'); window.dispatchEvent(new PopStateEvent('popstate')); location.reload(); }}
-            >
-              Pořadatel →
-            </a>
-          </div>
+          <p
+            style={{
+              textAlign: 'center',
+              marginTop: 32,
+              color: 'var(--text-muted)',
+              fontSize: 12,
+            }}
+          >
+            v1.0 · AosPoint
+          </p>
         </div>
       </div>
     );
@@ -152,16 +255,33 @@ export default function CompetitorApp() {
 
   if (screen === 'waiting') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: '#1a1a2e' }}>
-        <div className="text-center">
-          <div className="text-6xl mb-6">⏳</div>
-          <h2 className="text-2xl font-bold text-white mb-3">Čekáme na start</h2>
-          <p className="text-gray-400 mb-2">Event ještě nezačal</p>
-          <p className="text-gray-500 text-sm mb-8">Závodník: <span style={{ color: '#4ecca3' }}>{session?.competitorName} #{session?.competitorNumber}</span></p>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center p-5"
+        style={{ background: 'var(--bg-primary)' }}
+      >
+        <div style={{ width: '100%', maxWidth: '420px', textAlign: 'center' }}>
+          <div style={{ fontSize: 56, marginBottom: 20 }}>⏳</div>
+          <h2
+            style={{
+              fontSize: 28,
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              marginBottom: 8,
+            }}
+          >
+            Čekáme na start
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 6 }}>Event ještě nezačal</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 32 }}>
+            Závodník:{' '}
+            <span style={{ color: 'var(--accent-bright)', fontWeight: 600 }}>
+              {session?.competitorName} #{session?.competitorNumber}
+            </span>
+          </p>
           <button
             onClick={() => setScreen('racing')}
-            className="px-8 py-4 rounded-xl font-bold"
-            style={{ background: '#4ecca3', color: '#1a1a2e', minHeight: '64px' }}
+            className="btn-primary"
+            style={{ minHeight: 56 }}
           >
             Jdu závodit (debug)
           </button>
@@ -182,16 +302,35 @@ export default function CompetitorApp() {
 
   if (screen === 'results' && session) {
     return (
-      <div className="min-h-screen p-4" style={{ background: '#1a1a2e' }}>
-        <h2 className="text-2xl font-bold mb-4" style={{ color: '#4ecca3' }}>Moje výsledky</h2>
-        <p className="text-gray-400">Závodník: {session.competitorName} #{session.competitorNumber}</p>
-        <button
-          onClick={() => setScreen('racing')}
-          className="mt-6 px-6 py-4 rounded-xl font-bold"
-          style={{ background: '#4ecca3', color: '#1a1a2e', minHeight: '64px' }}
-        >
-          Zpět na mapu
-        </button>
+      <div className="min-h-screen p-5" style={{ background: 'var(--bg-primary)' }}>
+        <div style={{ maxWidth: 420, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+            <span style={{ fontSize: 28 }}>🏆</span>
+            <h2
+              style={{
+                fontSize: 24,
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Moje výsledky
+            </h2>
+          </div>
+          <div className="card">
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
+              Závodník:{' '}
+              <span style={{ color: 'white', fontWeight: 600 }}>
+                {session.competitorName} #{session.competitorNumber}
+              </span>
+            </p>
+            <button
+              onClick={() => setScreen('racing')}
+              className="btn-secondary"
+            >
+              ← Zpět na mapu
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { createEvent, type Event } from '../../api';
 
 interface Props {
@@ -27,45 +28,111 @@ export default function NewEventForm({ onCreated, onCancel }: Props) {
   };
 
   return (
-    <div className="min-h-screen p-4" style={{ background: '#1a1a2e' }}>
-      <div className="max-w-sm mx-auto">
-        <button onClick={onCancel} className="text-gray-400 mb-6 flex items-center gap-1">
-          ← Zpět
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+      {/* Header */}
+      <div
+        style={{
+          background: 'var(--bg-secondary)',
+          borderBottom: '1px solid var(--border)',
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <button
+          onClick={onCancel}
+          style={{
+            background: 'var(--bg-tertiary)',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            width: 36,
+            height: 36,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            fontSize: 16,
+          }}
+        >
+          ←
         </button>
-        <h2 className="text-2xl font-bold mb-6" style={{ color: '#4ecca3' }}>Nový event</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.01em' }}>Nový event</h2>
+      </div>
 
-        <div className="space-y-4">
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 20px' }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Název eventu</label>
+            <label
+              style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                marginBottom: 8,
+              }}
+            >
+              Název eventu
+            </label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="Spring Rally 2026"
-              className="w-full px-4 py-4 rounded-xl text-white"
-              style={{ background: '#16213e', border: '2px solid #0f3460' }}
+              className="input-field"
             />
           </div>
+
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Datum</label>
+            <label
+              style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                marginBottom: 8,
+              }}
+            >
+              Datum
+            </label>
             <input
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full px-4 py-4 rounded-xl text-white"
-              style={{ background: '#16213e', border: '2px solid #0f3460' }}
+              className="input-field"
+              style={{ colorScheme: 'dark' }}
             />
           </div>
 
-          {error && <div className="text-red-400 text-sm">{error}</div>}
+          {error && (
+            <div
+              style={{
+                background: 'var(--danger-glow)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: 10,
+                padding: '10px 14px',
+                color: 'var(--danger)',
+                fontSize: 14,
+              }}
+            >
+              {error}
+            </div>
+          )}
 
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full py-4 rounded-xl font-bold text-lg"
-            style={{ background: '#4ecca3', color: '#1a1a2e', minHeight: '64px' }}
+            className="btn-primary"
+            style={{ minHeight: 52 }}
           >
-            {loading ? 'Vytvářím...' : 'Vytvořit event'}
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              {loading ? '⟳ Vytvářím...' : <><Plus size={18} /> Vytvořit event</>}
+            </span>
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Lock, LogOut } from 'lucide-react';
 import { ADMIN_KEY } from '../../config';
 import Dashboard from './Dashboard';
 
@@ -17,46 +18,109 @@ export default function AdminApp() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: '#1a1a2e' }}>
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">🏁</div>
-            <h1 className="text-3xl font-bold" style={{ color: '#4ecca3' }}>AosPoint</h1>
-            <p className="text-gray-400 mt-2">Administrace pořadatele</p>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Heslo pořadatele</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full px-4 py-4 rounded-xl text-white text-lg"
-                style={{ background: '#16213e', border: '2px solid #0f3460' }}
-                onKeyDown={e => e.key === 'Enter' && handleLogin()}
-              />
+      <div
+        className="min-h-screen flex flex-col items-center justify-center p-5"
+        style={{ background: 'var(--bg-primary)' }}
+      >
+        <div style={{ width: '100%', maxWidth: '420px' }}>
+          {/* Logo */}
+          <div className="text-center" style={{ marginBottom: 40 }}>
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                background: 'var(--accent-glow)',
+                border: '1px solid rgba(124,58,237,0.3)',
+                borderRadius: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px',
+              }}
+            >
+              <Lock size={32} color="#8b5cf6" />
             </div>
-            {error && <div className="text-red-400 text-sm">{error}</div>}
-            <button
-              onClick={handleLogin}
-              className="w-full py-4 rounded-xl font-bold text-lg"
-              style={{ background: '#4ecca3', color: '#1a1a2e', minHeight: '64px' }}
+            <h1
+              style={{
+                fontSize: 28,
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+              }}
             >
-              Přihlásit se
-            </button>
+              AosPoint Admin
+            </h1>
+            <p style={{ color: 'var(--text-secondary)', marginTop: 6, fontSize: 14 }}>
+              Administrace pořadatele
+            </p>
           </div>
 
-          <div className="text-center mt-6">
-            <a
-              href="/"
-              className="text-sm"
-              style={{ color: '#0f3460' }}
-              onClick={e => { e.preventDefault(); location.href = '/'; }}
+          {/* Form */}
+          <div className="card" style={{ padding: '28px 24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginBottom: 8,
+                  }}
+                >
+                  Heslo
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="input-field"
+                  onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                />
+              </div>
+
+              {error && (
+                <div
+                  style={{
+                    background: 'var(--danger-glow)',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    borderRadius: 10,
+                    padding: '10px 14px',
+                    color: 'var(--danger)',
+                    fontSize: 14,
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
+              <button onClick={handleLogin} className="btn-primary" style={{ minHeight: 52 }}>
+                PŘIHLÁSIT SE
+              </button>
+            </div>
+          </div>
+
+          <div className="text-center" style={{ marginTop: 20 }}>
+            <button
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                fontSize: 13,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+              onClick={() => location.href = '/'}
+              onMouseOver={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+              onMouseOut={e => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
-              ← Závodník
-            </a>
+              <LogOut size={14} />
+              Závodník
+            </button>
           </div>
         </div>
       </div>

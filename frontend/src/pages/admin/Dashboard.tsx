@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
+import { Plus, ChevronRight, Trophy, Map } from 'lucide-react';
 import { listEvents, type Event } from '../../api';
 import EventDetail from './EventDetail';
 import NewEventForm from './NewEventForm';
 
 type View = 'list' | 'new' | 'detail';
+
+const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; dot?: string }> = {
+  active: { label: '● Aktivní', bg: 'var(--success-glow)', color: 'var(--success)', dot: 'var(--success)' },
+  finished: { label: 'Dokončen', bg: 'rgba(124,58,237,0.15)', color: 'var(--accent-bright)' },
+  draft: { label: 'Draft', bg: 'var(--bg-tertiary)', color: 'var(--text-muted)' },
+};
 
 export default function Dashboard() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -46,60 +53,172 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen p-4" style={{ background: '#1a1a2e' }}>
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold" style={{ color: '#4ecca3' }}>📍 AosPoint Admin</h1>
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+      {/* Header */}
+      <div
+        style={{
+          background: 'var(--bg-secondary)',
+          borderBottom: '1px solid var(--border)',
+          padding: '20px 20px 16px',
+        }}
+      >
+        <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Map size={20} color="var(--accent-bright)" />
+            <h1
+              style={{
+                fontSize: 20,
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Moje eventy
+            </h1>
+          </div>
           <button
             onClick={() => setView('new')}
-            className="px-4 py-2 rounded-xl font-bold"
-            style={{ background: '#4ecca3', color: '#1a1a2e' }}
+            style={{
+              background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+              border: 'none',
+              borderRadius: 12,
+              padding: '10px 16px',
+              color: 'white',
+              fontWeight: 600,
+              fontSize: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: '0 4px 16px rgba(124,58,237,0.35)',
+              cursor: 'pointer',
+            }}
           >
-            + Nový event
+            <Plus size={16} />
+            Nový
           </button>
         </div>
+      </div>
 
+      {/* Content */}
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '20px' }}>
         {loading ? (
-          <div className="text-gray-400 text-center py-12">Načítám...</div>
+          <div
+            style={{
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              padding: '48px 0',
+              fontSize: 14,
+            }}
+          >
+            Načítám...
+          </div>
         ) : events.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">🏁</div>
-            <p className="text-gray-400">Žádné eventy. Vytvořte první!</p>
+          <div style={{ textAlign: 'center', padding: '64px 0' }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+                borderRadius: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px',
+              }}
+            >
+              <Trophy size={28} color="var(--text-muted)" />
+            </div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>Žádné eventy</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Vytvořte svůj první event</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {events.map(ev => (
-              <div
-                key={ev.id}
-                onClick={() => { setSelectedEvent(ev); setView('detail'); }}
-                className="p-4 rounded-xl cursor-pointer transition-all"
-                style={{ background: '#16213e', border: '1px solid #0f3460' }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-white">{ev.name}</div>
-                    <div className="text-sm text-gray-400">{ev.date}</div>
-                    {ev.accessCode && (
-                      <div className="text-xs mt-1 font-mono" style={{ color: '#4ecca3' }}>
-                        Kód: {ev.accessCode}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <span
-                      className="px-2 py-1 rounded text-xs font-bold"
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {events.map(ev => {
+              const status = STATUS_CONFIG[ev.status] || STATUS_CONFIG.draft;
+              return (
+                <div
+                  key={ev.id}
+                  onClick={() => { setSelectedEvent(ev); setView('detail'); }}
+                  style={{
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 16,
+                    padding: '18px 20px',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s, background 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  }}
+                  onMouseOver={e => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-hover)';
+                    (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-tertiary)';
+                  }}
+                  onMouseOut={e => {
+                    (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)';
+                    (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-secondary)';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div
                       style={{
-                        background: ev.status === 'active' ? '#064e3b' : ev.status === 'finished' ? '#1e1b4b' : '#292524',
-                        color: ev.status === 'active' ? '#4ecca3' : ev.status === 'finished' ? '#818cf8' : '#9ca3af',
+                        width: 44,
+                        height: 44,
+                        background: 'var(--bg-tertiary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 12,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 20,
+                        flexShrink: 0,
                       }}
                     >
-                      {ev.status === 'active' ? '● Aktivní' : ev.status === 'finished' ? 'Dokončen' : 'Draft'}
+                      🏁
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>{ev.name}</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{ev.date}</div>
+                      {ev.accessCode && (
+                        <div
+                          style={{
+                            marginTop: 4,
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                            fontWeight: 600,
+                            color: 'var(--accent-bright)',
+                            background: 'var(--accent-glow)',
+                            border: '1px solid rgba(124,58,237,0.2)',
+                            borderRadius: 6,
+                            padding: '2px 8px',
+                            display: 'inline-block',
+                          }}
+                        >
+                          {ev.accessCode}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <span
+                      style={{
+                        background: status.bg,
+                        color: status.color,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        borderRadius: 999,
+                        padding: '4px 10px',
+                      }}
+                    >
+                      {status.label}
                     </span>
-                    <div className="text-gray-500 text-xs mt-1">›</div>
+                    <ChevronRight size={16} color="var(--text-muted)" />
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

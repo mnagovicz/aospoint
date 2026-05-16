@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { MapPin, Navigation, CheckCircle, XCircle, Radio, WifiOff } from 'lucide-react';
 import { type Checkpoint, recordPassage } from '../../api';
 import { playBeep, vibrate } from '../../utils/audio';
 import { useGPS } from '../../hooks/useGPS';
@@ -17,23 +18,45 @@ L.Icon.Default.mergeOptions({
 });
 
 const playerIcon = new L.DivIcon({
-  html: '<div style="width:18px;height:18px;background:#4ecca3;border:3px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(78,204,163,0.8)"></div>',
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
+  html: `<div style="
+    width: 20px; height: 20px;
+    background: #8b5cf6;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(124,58,237,0.3), 0 0 16px rgba(124,58,237,0.6);
+  "></div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
   className: '',
 });
 
 const checkpointDoneIcon = new L.DivIcon({
-  html: '<div style="width:24px;height:24px;background:#22c55e;border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px">✓</div>',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  html: `<div style="
+    width: 26px; height: 26px;
+    background: #10b981;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    box-shadow: 0 0 12px rgba(16,185,129,0.5);
+  ">✓</div>`,
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
   className: '',
 });
 
 const checkpointIcon = new L.DivIcon({
-  html: '<div style="width:24px;height:24px;background:#f59e0b;border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px">!</div>',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  html: `<div style="
+    width: 26px; height: 26px;
+    background: #7c3aed;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: white; font-weight: 700;
+    box-shadow: 0 0 12px rgba(124,58,237,0.5);
+  ">!</div>`,
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
   className: '',
 });
 
@@ -135,25 +158,79 @@ export default function RacingScreen({ session, checkpoints }: Props) {
     : [49.2, 17.7];
 
   const recordedCount = passages.filter(p => p.action === 'recorded').length;
+  const progressPct = checkpoints.length > 0 ? (recordedCount / checkpoints.length) * 100 : 0;
 
   return (
-    <div className="relative" style={{ height: '100dvh', background: '#1a1a2e' }}>
+    <div className="relative" style={{ height: '100dvh', background: 'var(--bg-primary)' }}>
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3"
-        style={{ background: 'rgba(22,33,62,0.95)', backdropFilter: 'blur(8px)' }}>
-        <div>
-          <div className="font-bold" style={{ color: '#4ecca3' }}>
-            {session.competitorName} <span className="text-white">#{session.competitorNumber}</span>
+      <div
+        className="absolute top-0 left-0 right-0 z-50"
+        style={{
+          background: 'rgba(10,10,15,0.92)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--border)',
+          padding: '12px 16px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'white' }}>
+              {session.competitorName}{' '}
+              <span
+                style={{
+                  color: 'var(--accent-bright)',
+                  fontFamily: 'monospace',
+                  fontWeight: 600,
+                }}
+              >
+                #{session.competitorNumber}
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: gpsError ? 'var(--danger)' : position ? 'var(--success)' : 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                marginTop: 2,
+              }}
+            >
+              {gpsError ? (
+                <><WifiOff size={11} /> {gpsError}</>
+              ) : position ? (
+                <><Navigation size={11} /> GPS ±{Math.round(position.accuracy)}m</>
+              ) : (
+                <><Radio size={11} /> Hledám GPS...</>
+              )}
+            </div>
           </div>
-          <div className="text-xs text-gray-400">
-            {gpsError ? `⚠ ${gpsError}` : position ? `GPS ±${Math.round(position.accuracy)}m` : '📡 Hledám GPS...'}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Live badge */}
+            <div className="badge-success" style={{ fontSize: 11, padding: '3px 10px' }}>
+              <span className="live-dot" />
+              LIVE
+            </div>
+            {/* CP counter */}
+            <div style={{ textAlign: 'right' }}>
+              <div
+                className="tabular-nums"
+                style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}
+              >
+                <span style={{ color: 'var(--accent-bright)' }}>{recordedCount}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>/{checkpoints.length}</span>
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                CP
+              </div>
+            </div>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold" style={{ color: '#4ecca3' }}>
-            {recordedCount} / {checkpoints.length}
-          </div>
-          <div className="text-xs text-gray-400">checkpointů</div>
+
+        {/* Progress bar */}
+        <div className="progress-bar">
+          <div className="progress-fill" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 
@@ -165,8 +242,8 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         zoomControl={false}
       >
         <TileLayer
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; OpenStreetMap'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
         {/* Checkpoints */}
@@ -176,9 +253,10 @@ export default function RacingScreen({ session, checkpoints }: Props) {
               center={[cp.lat, cp.lng]}
               radius={cp.radius}
               pathOptions={{
-                color: triggeredIds.has(cp.id) ? '#22c55e' : '#f59e0b',
-                fillColor: triggeredIds.has(cp.id) ? '#22c55e' : '#f59e0b',
-                fillOpacity: 0.2,
+                color: triggeredIds.has(cp.id) ? '#10b981' : '#7c3aed',
+                fillColor: triggeredIds.has(cp.id) ? '#10b981' : '#7c3aed',
+                fillOpacity: 0.15,
+                weight: 2,
               }}
             />
             <Marker
@@ -186,11 +264,16 @@ export default function RacingScreen({ session, checkpoints }: Props) {
               icon={triggeredIds.has(cp.id) ? checkpointDoneIcon : checkpointIcon}
             >
               <Popup>
-                <div style={{ color: '#1a1a2e' }}>
-                  <strong>{cp.name}</strong>
+                <div>
+                  <strong style={{ color: 'white' }}>{cp.name}</strong>
                   <br />
-                  Radius: {cp.radius}m
-                  {triggeredIds.has(cp.id) && <><br /><span style={{ color: '#22c55e' }}>✓ Splněno</span></>}
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Radius: {cp.radius}m</span>
+                  {triggeredIds.has(cp.id) && (
+                    <>
+                      <br />
+                      <span style={{ color: 'var(--success)', fontSize: 12, fontWeight: 600 }}>✓ Splněno</span>
+                    </>
+                  )}
                 </div>
               </Popup>
             </Marker>
@@ -204,7 +287,12 @@ export default function RacingScreen({ session, checkpoints }: Props) {
             <Circle
               center={[position.lat, position.lng]}
               radius={position.accuracy}
-              pathOptions={{ color: '#4ecca3', fillColor: '#4ecca3', fillOpacity: 0.1, weight: 1 }}
+              pathOptions={{
+                color: '#8b5cf6',
+                fillColor: '#8b5cf6',
+                fillOpacity: 0.08,
+                weight: 1,
+              }}
             />
             <MapFollow lat={position.lat} lng={position.lng} />
           </>
@@ -213,39 +301,123 @@ export default function RacingScreen({ session, checkpoints }: Props) {
 
       {/* Syncing indicator */}
       {syncing && (
-        <div className="absolute bottom-4 left-4 right-4 z-50 px-4 py-2 rounded-lg text-sm text-center"
-          style={{ background: 'rgba(15,52,96,0.9)' }}>
+        <div
+          className="absolute bottom-4 left-4 right-4 z-50"
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            padding: '10px 16px',
+            fontSize: 13,
+            textAlign: 'center',
+            color: 'var(--text-secondary)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
           🔄 Synchronizuji offline záznamy...
         </div>
       )}
 
       {/* Checkpoint Dialog */}
       {dialog && (
-        <div className="absolute inset-0 z-[9999] flex flex-col items-center justify-center p-6"
-          style={{ background: 'rgba(0,0,0,0.92)' }}>
-          <div className="w-full max-w-sm text-center space-y-6">
-            <div className="text-6xl">📍</div>
-            <div>
-              <div className="text-sm text-gray-400 uppercase tracking-wider">KONTROLNÍ BOD</div>
-              <div className="text-4xl font-bold text-white mt-1">{dialog.checkpoint.name}</div>
+        <div
+          className="absolute inset-0 z-[9999] flex flex-col items-center justify-center p-6"
+          style={{
+            background: 'rgba(0,0,0,0.88)',
+            backdropFilter: 'blur(16px)',
+          }}
+        >
+          <div style={{ width: '100%', maxWidth: 380, textAlign: 'center' }}>
+            {/* Icon */}
+            <div
+              style={{
+                width: 80,
+                height: 80,
+                background: 'var(--accent-glow)',
+                border: '1px solid rgba(124,58,237,0.4)',
+                borderRadius: 24,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px',
+                fontSize: 36,
+              }}
+            >
+              <MapPin size={36} color="#8b5cf6" />
             </div>
-            <div className="text-gray-400">
-              Auto-ignorovat za <span style={{ color: '#f59e0b' }} className="text-2xl font-bold">{dialog.countdown}s</span>
+
+            {/* Title */}
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: 8,
+              }}
+            >
+              KONTROLNÍ BOD
             </div>
-            <div className="space-y-3">
+            <div
+              style={{
+                fontSize: 36,
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                color: 'white',
+                marginBottom: 20,
+              }}
+            >
+              {dialog.checkpoint.name}
+            </div>
+
+            {/* Countdown */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+                borderRadius: 999,
+                padding: '8px 20px',
+                marginBottom: 28,
+              }}
+            >
+              <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Auto-ignorovat za</span>
+              <span
+                className="tabular-nums"
+                style={{
+                  color: dialog.countdown <= 5 ? 'var(--danger)' : 'var(--warning)',
+                  fontSize: 22,
+                  fontWeight: 800,
+                }}
+              >
+                {dialog.countdown}s
+              </span>
+            </div>
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <button
                 onClick={() => handleAction(dialog.checkpoint, 'recorded')}
-                className="w-full rounded-2xl font-bold text-xl"
-                style={{ background: '#4ecca3', color: '#1a1a2e', minHeight: '72px' }}
+                className="btn-success"
+                style={{ minHeight: 64, fontSize: 17, letterSpacing: '0.02em' }}
               >
-                ✅ ZAZNAMENAT
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  <CheckCircle size={22} />
+                  ZAZNAMENAT
+                </span>
               </button>
               <button
                 onClick={() => handleAction(dialog.checkpoint, 'ignored')}
-                className="w-full rounded-2xl font-bold text-xl"
-                style={{ background: '#374151', color: '#fff', minHeight: '72px' }}
+                className="btn-secondary"
+                style={{ minHeight: 52 }}
               >
-                ❌ IGNOROVAT
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <XCircle size={18} />
+                  IGNOROVAT
+                </span>
               </button>
             </div>
           </div>
