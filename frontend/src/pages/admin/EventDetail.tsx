@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, Circle } from 'react-leaflet';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Users, Trophy, Plus, Download, CheckCircle, XCircle, Pencil, Trash2 } from 'lucide-react';
@@ -54,6 +54,12 @@ interface Props {
   onBack: () => void;
 }
 
+function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap();
+  mapRef.current = map;
+  return null;
+}
+
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   useMapEvents({
     click: (e) => onMapClick(e.latlng.lat, e.latlng.lng),
@@ -67,6 +73,13 @@ export default function EventDetail({ event, onBack }: Props) {
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [results, setResults] = useState<any>(null);
   const [_loading, setLoading] = useState(false);
+
+  // Map & marker refs
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRefs = useRef<Record<string, L.Marker | null>>({});
+
+  // Selected checkpoint (for list highlight)
+  const [selectedCheckpointId, setSelectedCheckpointId] = useState<string | null>(null);
 
   // Checkpoint form (new)
   const [cpForm, setCpForm] = useState<{ lat: number; lng: number; name: string; radius: number } | null>(null);
@@ -118,6 +131,16 @@ export default function EventDetail({ event, onBack }: Props) {
       getResults(event.id).then(setResults);
     }
   }, [tab, event.id]);
+
+  const handleCheckpointClick = (cp: Checkpoint) => {
+    setSelectedCheckpointId(cp.id);
+    if (mapRef.current) {
+      mapRef.current.flyTo([cp.lat, cp.lng], 15, { duration: 0.8 });
+      setTimeout(() => {
+        markerRefs.current[cp.id]?.openPopup();
+      }, 850);
+    }
+  };
 
   const handleMapClick = (lat: number, lng: number) => {
     setCpForm({ lat, lng, name: '', radius: 50 });
@@ -320,10 +343,19 @@ export default function EventDetail({ event, onBack }: Props) {
                   maxZoom={20}
                   attribution='© <a href="https://www.seznam.cz" target="_blank">Seznam.cz a.s.</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
                 />
+                <MapRefCapture mapRef={mapRef} />
                 <MapClickHandler onMapClick={handleMapClick} />
                 {checkpoints.map((cp) => (
                   <div key={cp.id}>
-                    <Marker position={[cp.lat, cp.lng]} icon={cpIcon} />
+                    <Marker
+                      position={[cp.lat, cp.lng]}
+                      icon={cpIcon}
+                      ref={(ref) => { markerRefs.current[cp.id] = ref; }}
+                    >
+                      <Popup>
+                        <strong>{cp.name}</strong><br />r = {cp.radius} m
+                      </Popup>
+                    </Marker>
                     <Circle
                       center={[cp.lat, cp.lng]}
                       radius={cp.radius}
@@ -438,14 +470,18 @@ export default function EventDetail({ event, onBack }: Props) {
               {checkpoints.map((cp, i) => (
                 <div key={cp.id}>
                   <div
+                    onClick={() => handleCheckpointClick(cp)}
                     style={{
-                      background: 'var(--bg-secondary)',
+                      background: selectedCheckpointId === cp.id ? 'rgba(124, 58, 237, 0.15)' : 'var(--bg-secondary)',
                       border: '1px solid var(--border)',
+                      borderLeft: selectedCheckpointId === cp.id ? '3px solid #7c3aed' : '1px solid var(--border)',
                       borderRadius: editCp?.id === cp.id ? '12px 12px 0 0' : 12,
                       padding: '14px 16px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 12,
+                      cursor: 'pointer',
+                      transition: 'background 0.2s, border-color 0.2s',
                     }}
                   >
                     <div
