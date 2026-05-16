@@ -1,8 +1,8 @@
 import { type Checkpoint } from '../api';
 
-const CHECKPOINTS_KEY = 'trailpoint_checkpoints';
-const PENDING_PASSAGES_KEY = 'trailpoint_pending_passages';
-const SESSION_KEY = 'trailpoint_session';
+const CHECKPOINTS_KEY = 'aospoint_checkpoints';
+const PENDING_PASSAGES_KEY = 'aospoint_pending_passages';
+const SESSION_KEY = 'aospoint_session';
 
 export interface CompetitorSession {
   eventId: string;

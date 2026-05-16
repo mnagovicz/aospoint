@@ -114,7 +114,7 @@ export default function EventDetail({ event, onBack }: Props) {
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `trailpoint-${event.name}-results.csv`; a.click();
+    a.href = url; a.download = `aospoint-${event.name}-results.csv`; a.click();
   };
 
   const inputStyle = { background: '#16213e', border: '2px solid #0f3460', color: '#fff' };

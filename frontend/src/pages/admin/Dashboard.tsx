@@ -49,7 +49,7 @@ export default function Dashboard() {
     <div className="min-h-screen p-4" style={{ background: '#1a1a2e' }}>
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold" style={{ color: '#4ecca3' }}>📍 TrailPoint Admin</h1>
+          <h1 className="text-2xl font-bold" style={{ color: '#4ecca3' }}>📍 AosPoint Admin</h1>
           <button
             onClick={() => setView('new')}
             className="px-4 py-2 rounded-xl font-bold"

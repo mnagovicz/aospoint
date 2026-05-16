@@ -10,8 +10,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'TrailPoint',
-        short_name: 'TrailPoint',
+        name: 'AosPoint',
+        short_name: 'AosPoint',
         description: 'Automobilové orientační soutěže',
         theme_color: '#1a1a2e',
         background_color: '#1a1a2e',

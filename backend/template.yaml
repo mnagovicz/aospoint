@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: TrailPoint - Automobilové orientační soutěže
+Description: AosPoint - Automobilové orientační soutěže
 
 Globals:
   Function:
@@ -9,11 +9,11 @@ Globals:
     MemorySize: 256
     Environment:
       Variables:
-        EVENTS_TABLE: trailpoint-events
-        CHECKPOINTS_TABLE: trailpoint-checkpoints
-        COMPETITORS_TABLE: trailpoint-competitors
-        PASSAGES_TABLE: trailpoint-passages
-        ADMIN_KEY: trailpoint2026
+        EVENTS_TABLE: aospoint-events
+        CHECKPOINTS_TABLE: aospoint-checkpoints
+        COMPETITORS_TABLE: aospoint-competitors
+        PASSAGES_TABLE: aospoint-passages
+        ADMIN_KEY: aospoint2026
   Api:
     Cors:
       AllowMethods: "'*'"
@@ -22,7 +22,7 @@ Globals:
 
 Resources:
   # API Gateway
-  TrailPointApi:
+  AosPointApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
@@ -58,8 +58,8 @@ Resources:
                   - dynamodb:Query
                   - dynamodb:Scan
                 Resource:
-                  - !Sub "arn:aws:dynamodb:eu-west-1:${AWS::AccountId}:table/trailpoint-*"
-                  - !Sub "arn:aws:dynamodb:eu-west-1:${AWS::AccountId}:table/trailpoint-*/index/*"
+                  - !Sub "arn:aws:dynamodb:eu-west-1:${AWS::AccountId}:table/aospoint-*"
+                  - !Sub "arn:aws:dynamodb:eu-west-1:${AWS::AccountId}:table/aospoint-*/index/*"
 
   # Lambda Functions
   CreateEventFunction:
@@ -72,7 +72,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /events
             Method: POST
 
@@ -86,7 +86,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /events
             Method: GET
 
@@ -100,7 +100,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /events/{id}
             Method: GET
 
@@ -114,7 +114,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /events/{id}/checkpoints
             Method: POST
 
@@ -128,7 +128,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /events/{id}/checkpoints
             Method: GET
 
@@ -142,7 +142,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /events/{id}/competitors
             Method: POST
 
@@ -156,7 +156,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /events/{id}/competitors
             Method: GET
 
@@ -170,7 +170,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /passages
             Method: POST
 
@@ -184,7 +184,7 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /events/{id}/passages
             Method: GET
 
@@ -198,11 +198,11 @@ Resources:
         Api:
           Type: Api
           Properties:
-            RestApiId: !Ref TrailPointApi
+            RestApiId: !Ref AosPointApi
             Path: /events/{id}/results
             Method: GET
 
 Outputs:
   ApiUrl:
     Description: API Gateway URL
-    Value: !Sub "https://${TrailPointApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+    Value: !Sub "https://${AosPointApi}.execute-api.${AWS::Region}.amazonaws.com/prod"

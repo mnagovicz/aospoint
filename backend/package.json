@@ -1,7 +1,7 @@
 {
-  "name": "trailpoint-backend",
+  "name": "aospoint-backend",
   "version": "1.0.0",
-  "description": "TrailPoint Backend - AWS Lambda handlers",
+  "description": "AosPoint Backend - AWS Lambda handlers",
   "main": "index.js",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.0.0",
