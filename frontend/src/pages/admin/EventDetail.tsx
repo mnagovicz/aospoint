@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Users, Trophy, Plus, Download, CheckCircle, XCircle } from 'lucide-react';
+import { MapPin, Users, Trophy, Plus, Download, CheckCircle, XCircle, Pencil, Trash2 } from 'lucide-react';
 import {
   type Event, type Checkpoint, type Competitor,
-  listCheckpoints, createCheckpoint,
+  listCheckpoints, createCheckpoint, updateCheckpoint, deleteCheckpoint,
   listCompetitors, createCompetitor,
   getResults,
 } from '../../api';
@@ -68,9 +68,18 @@ export default function EventDetail({ event, onBack }: Props) {
   const [results, setResults] = useState<any>(null);
   const [_loading, setLoading] = useState(false);
 
-  // Checkpoint form
+  // Checkpoint form (new)
   const [cpForm, setCpForm] = useState<{ lat: number; lng: number; name: string; radius: number } | null>(null);
   const [cpSaving, setCpSaving] = useState(false);
+
+  // Checkpoint edit
+  const [editCp, setEditCp] = useState<{ id: string; name: string; radius: number } | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Checkpoint delete confirm
+  const [deleteCpId, setDeleteCpId] = useState<string | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deleteSaving, setDeleteSaving] = useState(false);
 
   // Competitor form
   const [compDriver, setCompDriver] = useState('');
@@ -103,6 +112,31 @@ export default function EventDetail({ event, onBack }: Props) {
 
   const handleMapClick = (lat: number, lng: number) => {
     setCpForm({ lat, lng, name: '', radius: 50 });
+  };
+
+  const handleEditCheckpoint = async () => {
+    if (!editCp) return;
+    setEditSaving(true);
+    try {
+      await updateCheckpoint(event.id, editCp.id, { name: editCp.name, radius: editCp.radius });
+      setEditCp(null);
+      await loadData();
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteCheckpoint = async () => {
+    if (!deleteCpId) return;
+    setDeleteSaving(true);
+    try {
+      await deleteCheckpoint(event.id, deleteCpId);
+      setDeleteCpId(null);
+      setDeleteConfirmName('');
+      await loadData();
+    } finally {
+      setDeleteSaving(false);
+    }
   };
 
   const handleSaveCheckpoint = async () => {
@@ -316,44 +350,171 @@ export default function EventDetail({ event, onBack }: Props) {
               </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {checkpoints.map((cp, i) => (
+            {/* Delete confirmation modal */}
+            {deleteCpId && (
+              <div
+                style={{
+                  position: 'fixed', inset: 0, zIndex: 1000,
+                  background: 'rgba(0,0,0,0.6)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 24,
+                }}
+              >
                 <div
-                  key={cp.id}
                   style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border)',
-                    borderRadius: 12,
-                    padding: '14px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
+                    borderRadius: 16,
+                    padding: 24,
+                    maxWidth: 360,
+                    width: '100%',
                   }}
                 >
+                  <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Smazat checkpoint?</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 20 }}>
+                    Opravdu smazat checkpoint <strong style={{ color: 'var(--text-primary)' }}>{deleteConfirmName}</strong>? Tuto akci nelze vrátit.
+                  </p>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      onClick={() => { setDeleteCpId(null); setDeleteConfirmName(''); }}
+                      className="btn-secondary"
+                      style={{ flex: 1, minHeight: 40 }}
+                      disabled={deleteSaving}
+                    >
+                      Zrušit
+                    </button>
+                    <button
+                      onClick={handleDeleteCheckpoint}
+                      disabled={deleteSaving}
+                      style={{
+                        flex: 1, minHeight: 40,
+                        background: '#dc2626', color: '#fff',
+                        border: 'none', borderRadius: 10,
+                        fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                      }}
+                    >
+                      {deleteSaving ? 'Mažu...' : 'Smazat'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {checkpoints.map((cp, i) => (
+                <div key={cp.id}>
                   <div
                     style={{
-                      width: 34,
-                      height: 34,
-                      background: 'var(--accent-glow)',
-                      border: '1px solid rgba(124,58,237,0.3)',
-                      borderRadius: 999,
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: editCp?.id === cp.id ? '12px 12px 0 0' : 12,
+                      padding: '14px 16px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: 'var(--accent-bright)',
-                      flexShrink: 0,
+                      gap: 12,
                     }}
                   >
-                    {i + 1}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{cp.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                      {cp.lat.toFixed(5)}, {cp.lng.toFixed(5)} · r={cp.radius}m
+                    <div
+                      style={{
+                        width: 34, height: 34,
+                        background: 'var(--accent-glow)',
+                        border: '1px solid rgba(124,58,237,0.3)',
+                        borderRadius: 999,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700, color: 'var(--accent-bright)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {i + 1}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{cp.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {cp.lat.toFixed(5)}, {cp.lng.toFixed(5)} · r={cp.radius}m
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button
+                        onClick={() => setEditCp(editCp?.id === cp.id ? null : { id: cp.id, name: cp.name, radius: cp.radius })}
+                        title="Editovat"
+                        style={{
+                          background: editCp?.id === cp.id ? 'rgba(124,58,237,0.15)' : 'var(--bg-tertiary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 8, padding: '6px 8px',
+                          cursor: 'pointer', color: 'var(--text-secondary)',
+                          display: 'flex', alignItems: 'center',
+                        }}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => { setDeleteCpId(cp.id); setDeleteConfirmName(cp.name); }}
+                        title="Smazat"
+                        style={{
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 8, padding: '6px 8px',
+                          cursor: 'pointer', color: '#dc2626',
+                          display: 'flex', alignItems: 'center',
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
+
+                  {/* Inline edit form */}
+                  {editCp?.id === cp.id && (
+                    <div
+                      style={{
+                        background: 'var(--bg-tertiary)',
+                        border: '1px solid var(--border)',
+                        borderTop: 'none',
+                        borderRadius: '0 0 12px 12px',
+                        padding: '12px 16px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <input
+                          type="text"
+                          value={editCp.name}
+                          onChange={e => setEditCp({ ...editCp, name: e.target.value })}
+                          placeholder="Název checkpointu"
+                          className="input-field"
+                          autoFocus
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <label style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                            Radius (m)
+                          </label>
+                          <input
+                            type="number"
+                            value={editCp.radius}
+                            onChange={e => setEditCp({ ...editCp, radius: parseInt(e.target.value) || 50 })}
+                            className="input-field"
+                            style={{ flex: 1 }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <button
+                            onClick={handleEditCheckpoint}
+                            disabled={editSaving || !editCp.name}
+                            className="btn-primary"
+                            style={{ flex: 1, minHeight: 40, fontSize: 14, padding: '10px' }}
+                          >
+                            {editSaving ? 'Ukládám...' : '✓ Uložit změny'}
+                          </button>
+                          <button
+                            onClick={() => setEditCp(null)}
+                            className="btn-secondary"
+                            style={{ minHeight: 40, padding: '10px 16px', flex: '0 0 auto' }}
+                          >
+                            Zrušit
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               {checkpoints.length === 0 && (

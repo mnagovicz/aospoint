@@ -78,6 +78,23 @@ export const createCheckpoint = (
     body: JSON.stringify(data),
   }).then((r) => r.json());
 
+export const updateCheckpoint = (
+  eventId: string,
+  checkpointId: string,
+  data: { name?: string; lat?: number; lng?: number; radius?: number }
+) =>
+  fetch(`${API_URL}/events/${eventId}/checkpoints/${checkpointId}`, {
+    method: 'PUT',
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  }).then((r) => r.json());
+
+export const deleteCheckpoint = (eventId: string, checkpointId: string) =>
+  fetch(`${API_URL}/events/${eventId}/checkpoints/${checkpointId}`, {
+    method: 'DELETE',
+    headers: adminHeaders(),
+  }).then((r) => r.json());
+
 export const listCheckpoints = (eventId: string): Promise<Checkpoint[]> =>
   fetch(`${API_URL}/events/${eventId}/checkpoints`, { headers: jsonHeaders() }).then((r) => r.json());
 

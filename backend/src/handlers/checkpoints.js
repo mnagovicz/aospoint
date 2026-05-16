@@ -1,4 +1,4 @@
-const { PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, QueryCommand, UpdateCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const { docClient, ok, created, badRequest, unauthorized, serverError, requireAdmin } = require('./utils');
 
@@ -48,4 +48,51 @@ const listCheckpoints = async (event) => {
   }
 };
 
-module.exports = { createCheckpoint, listCheckpoints };
+const updateCheckpoint = async (event) => {
+  try {
+    if (!requireAdmin(event)) return unauthorized();
+    const { id: eventId, checkpointId } = event.pathParameters;
+    const body = JSON.parse(event.body || '{}');
+
+    const updates = {};
+    const names = {};
+    const values = {};
+    let expr = [];
+
+    if (body.name !== undefined) { expr.push('#name = :name'); names['#name'] = 'name'; values[':name'] = body.name; }
+    if (body.lat !== undefined) { expr.push('lat = :lat'); values[':lat'] = parseFloat(body.lat); }
+    if (body.lng !== undefined) { expr.push('lng = :lng'); values[':lng'] = parseFloat(body.lng); }
+    if (body.radius !== undefined) { expr.push('radius = :radius'); values[':radius'] = parseInt(body.radius); }
+
+    if (expr.length === 0) return badRequest('Žádná pole k aktualizaci');
+
+    const params = {
+      TableName: TABLE,
+      Key: { id: checkpointId },
+      UpdateExpression: 'SET ' + expr.join(', '),
+      ExpressionAttributeValues: values,
+      ReturnValues: 'ALL_NEW',
+    };
+    if (Object.keys(names).length > 0) params.ExpressionAttributeNames = names;
+
+    const result = await docClient.send(new UpdateCommand(params));
+    return ok(result.Attributes);
+  } catch (err) {
+    console.error(err);
+    return serverError(err.message);
+  }
+};
+
+const deleteCheckpoint = async (event) => {
+  try {
+    if (!requireAdmin(event)) return unauthorized();
+    const { checkpointId } = event.pathParameters;
+    await docClient.send(new DeleteCommand({ TableName: TABLE, Key: { id: checkpointId } }));
+    return ok({ deleted: true });
+  } catch (err) {
+    console.error(err);
+    return serverError(err.message);
+  }
+};
+
+module.exports = { createCheckpoint, listCheckpoints, updateCheckpoint, deleteCheckpoint };
