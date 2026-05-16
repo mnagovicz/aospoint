@@ -242,8 +242,10 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         zoomControl={false}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url={`https://api.mapy.com/v1/maptiles/basic/256/{z}/{x}/{y}?apikey=${import.meta.env.VITE_MAPY_API_KEY}`}
+          minZoom={0}
+          maxZoom={20}
+          attribution='© <a href="https://www.seznam.cz" target="_blank">Seznam.cz a.s.</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
         />
 
         {/* Checkpoints */}

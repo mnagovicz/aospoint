@@ -247,8 +247,10 @@ export default function EventDetail({ event, onBack }: Props) {
             >
               <MapContainer center={[49.8, 15.5]} zoom={8} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                 <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; OpenStreetMap contributors'
+                  url={`https://api.mapy.com/v1/maptiles/basic/256/{z}/{x}/{y}?apikey=${import.meta.env.VITE_MAPY_API_KEY}`}
+                  minZoom={0}
+                  maxZoom={20}
+                  attribution='© <a href="https://www.seznam.cz" target="_blank">Seznam.cz a.s.</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
                 />
                 <MapClickHandler onMapClick={handleMapClick} />
                 {checkpoints.map((cp) => (
