@@ -121,7 +121,7 @@ export default function CompetitorApp() {
               AosPoint
             </h1>
             <p style={{ color: 'var(--text-secondary)', marginTop: 6, fontSize: 15 }}>
-              Automobilová orientace
+              Automobilová orientace — přihlaste posádku
             </p>
           </div>
 
@@ -273,9 +273,9 @@ export default function CompetitorApp() {
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 6 }}>Event ještě nezačal</p>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 32 }}>
-            Závodník:{' '}
+            Posádka:{' '}
             <span style={{ color: 'var(--accent-bright)', fontWeight: 600 }}>
-              {session?.competitorName} #{session?.competitorNumber}
+              #{session?.competitorNumber} &mdash; {session?.competitorName}
             </span>
           </p>
           <button
@@ -318,9 +318,9 @@ export default function CompetitorApp() {
           </div>
           <div className="card">
             <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
-              Závodník:{' '}
+              Posádka:{' '}
               <span style={{ color: 'white', fontWeight: 600 }}>
-                {session.competitorName} #{session.competitorNumber}
+                #{session.competitorNumber} &mdash; {session.competitorName}
               </span>
             </p>
             <button

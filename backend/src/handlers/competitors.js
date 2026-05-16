@@ -9,14 +9,17 @@ const createCompetitor = async (event) => {
     if (!requireAdmin(event)) return unauthorized();
     const { id: eventId } = event.pathParameters;
     const body = JSON.parse(event.body || '{}');
-    if (!body.name) return badRequest('Jméno závodníka je povinné');
+    if (!body.driver) return badRequest('Jméno řidiče je povinné');
+    if (!body.coDriver) return badRequest('Jméno spolujezdce je povinné');
     if (!body.number) return badRequest('Závodní číslo je povinné');
 
     const accessCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     const item = {
       id: uuidv4(),
       eventId,
-      name: body.name,
+      driver: body.driver,
+      coDriver: body.coDriver,
+      name: `${body.driver} / ${body.coDriver}`,
       number: body.number,
       vehicle: body.vehicle || '',
       accessCode,

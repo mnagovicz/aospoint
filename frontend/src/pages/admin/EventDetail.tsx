@@ -73,7 +73,8 @@ export default function EventDetail({ event, onBack }: Props) {
   const [cpSaving, setCpSaving] = useState(false);
 
   // Competitor form
-  const [compName, setCompName] = useState('');
+  const [compDriver, setCompDriver] = useState('');
+  const [compCoDriver, setCompCoDriver] = useState('');
   const [compNumber, setCompNumber] = useState('');
   const [compVehicle, setCompVehicle] = useState('');
   const [compSaving, setCompSaving] = useState(false);
@@ -123,11 +124,11 @@ export default function EventDetail({ event, onBack }: Props) {
   };
 
   const handleAddCompetitor = async () => {
-    if (!compName || !compNumber) return;
+    if (!compDriver || !compCoDriver || !compNumber) return;
     setCompSaving(true);
     try {
-      await createCompetitor(event.id, { name: compName, number: compNumber, vehicle: compVehicle });
-      setCompName(''); setCompNumber(''); setCompVehicle('');
+      await createCompetitor(event.id, { driver: compDriver, coDriver: compCoDriver, number: compNumber, vehicle: compVehicle });
+      setCompDriver(''); setCompCoDriver(''); setCompNumber(''); setCompVehicle('');
       await loadData();
     } finally {
       setCompSaving(false);
@@ -136,11 +137,13 @@ export default function EventDetail({ event, onBack }: Props) {
 
   const exportCSV = () => {
     if (!results) return;
-    const rows = [['Závodník', 'Číslo', 'Vozidlo', 'Zaznamenáno', 'Celkem CP', 'Časy'].join(',')];
+    const rows = [['Řidič', 'Spolujezdec', 'Číslo', 'Vozidlo', 'Zaznamenáno', 'Celkem CP', 'Časy'].join(',')];
     for (const r of results.results) {
       const recorded = r.passages.filter((p: any) => p.action === 'recorded');
       const times = recorded.map((p: any) => new Date(p.timestamp).toLocaleTimeString('cs-CZ')).join(' | ');
-      rows.push([r.competitor.name, r.competitor.number, r.competitor.vehicle || '', r.recordedCount, r.totalCheckpoints, `"${times}"`].join(','));
+      const driver = r.competitor.driver || r.competitor.name;
+      const coDriver = r.competitor.coDriver || '';
+      rows.push([driver, coDriver, r.competitor.number, r.competitor.vehicle || '', r.recordedCount, r.totalCheckpoints, `"${times}"`].join(','));
     }
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -382,15 +385,23 @@ export default function EventDetail({ event, onBack }: Props) {
                     type="text"
                     value={compNumber}
                     onChange={e => setCompNumber(e.target.value)}
-                    placeholder="Číslo"
+                    placeholder="Č."
                     className="input-field"
-                    style={{ width: 80, flex: '0 0 auto' }}
+                    style={{ width: 64, flex: '0 0 auto' }}
                   />
                   <input
                     type="text"
-                    value={compName}
-                    onChange={e => setCompName(e.target.value)}
-                    placeholder="Jméno závodníka"
+                    value={compDriver}
+                    onChange={e => setCompDriver(e.target.value)}
+                    placeholder="Řidič"
+                    className="input-field"
+                    style={{ flex: 1 }}
+                  />
+                  <input
+                    type="text"
+                    value={compCoDriver}
+                    onChange={e => setCompCoDriver(e.target.value)}
+                    placeholder="Spolujezdec"
                     className="input-field"
                     style={{ flex: 1 }}
                   />
@@ -404,13 +415,13 @@ export default function EventDetail({ event, onBack }: Props) {
                 />
                 <button
                   onClick={handleAddCompetitor}
-                  disabled={compSaving || !compName || !compNumber}
+                  disabled={compSaving || !compDriver || !compCoDriver || !compNumber}
                   className="btn-primary"
                   style={{ minHeight: 48, fontSize: 14 }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <Plus size={16} />
-                    {compSaving ? 'Přidávám...' : 'Přidat závodníka'}
+                    {compSaving ? 'Přidávám...' : 'Přidat posádku'}
                   </span>
                 </button>
               </div>
@@ -437,12 +448,20 @@ export default function EventDetail({ event, onBack }: Props) {
                         fontWeight: 700,
                         color: 'var(--accent-bright)',
                         fontSize: 14,
+                        flexShrink: 0,
                       }}
                     >
                       #{comp.number}
                     </span>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{comp.name}</div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>
+                        {comp.driver || comp.name}
+                        {comp.coDriver && (
+                          <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>
+                            {' '}&amp;{' '}{comp.coDriver}
+                          </span>
+                        )}
+                      </div>
                       {comp.vehicle && (
                         <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 1 }}>
                           {comp.vehicle}
@@ -556,7 +575,10 @@ export default function EventDetail({ event, onBack }: Props) {
                           <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 700, fontSize: 15 }}>
                               <span style={{ color: 'var(--accent-bright)' }}>#{r.competitor.number}</span>{' '}
-                              {r.competitor.name}
+                              {r.competitor.driver
+                                ? <>{r.competitor.driver} <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>&amp; {r.competitor.coDriver}</span></>
+                                : r.competitor.name
+                              }
                             </div>
                             {r.competitor.vehicle && (
                               <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 1 }}>

@@ -23,7 +23,9 @@ export interface Checkpoint {
 export interface Competitor {
   id: string;
   eventId: string;
-  name: string;
+  driver: string;
+  coDriver: string;
+  name: string; // "driver / coDriver" — for backwards compat
   number: string | number;
   vehicle?: string;
   accessCode?: string;
@@ -82,7 +84,7 @@ export const listCheckpoints = (eventId: string): Promise<Checkpoint[]> =>
 // Competitors
 export const createCompetitor = (
   eventId: string,
-  data: { name: string; number: string; vehicle?: string }
+  data: { driver: string; coDriver: string; number: string; vehicle?: string }
 ) =>
   fetch(`${API_URL}/events/${eventId}/competitors`, {
     method: 'POST',
