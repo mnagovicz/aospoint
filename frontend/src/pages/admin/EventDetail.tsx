@@ -234,17 +234,18 @@ export default function EventDetail({ event, onBack }: Props) {
             </p>
             <div
               style={{
-                height: 280,
+                height: 500,
                 borderRadius: 16,
                 overflow: 'hidden',
                 border: '1px solid var(--border)',
                 marginBottom: 16,
+                width: '100%',
               }}
             >
-              <MapContainer center={[49.2, 17.7]} zoom={12} style={{ height: '100%' }} zoomControl={false}>
+              <MapContainer center={[49.8, 15.5]} zoom={8} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                 <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                  attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; OpenStreetMap contributors'
                 />
                 <MapClickHandler onMapClick={handleMapClick} />
                 {checkpoints.map((cp) => (
