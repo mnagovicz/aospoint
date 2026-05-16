@@ -188,6 +188,34 @@ Resources:
             Path: /events/{id}/competitors
             Method: GET
 
+  UpdateCompetitorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/competitors.updateCompetitor
+      CodeUri: .
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AosPointApi
+            Path: /events/{id}/competitors/{competitorId}
+            Method: PUT
+
+  DeleteCompetitorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/competitors.deleteCompetitor
+      CodeUri: .
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AosPointApi
+            Path: /events/{id}/competitors/{competitorId}
+            Method: DELETE
+
   RecordPassageFunction:
     Type: AWS::Serverless::Function
     Properties:

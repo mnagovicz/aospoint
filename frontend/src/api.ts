@@ -109,6 +109,23 @@ export const createCompetitor = (
     body: JSON.stringify(data),
   }).then((r) => r.json());
 
+export const updateCompetitor = (
+  eventId: string,
+  competitorId: string,
+  data: { driver?: string; coDriver?: string; number?: string }
+) =>
+  fetch(`${API_URL}/events/${eventId}/competitors/${competitorId}`, {
+    method: 'PUT',
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  }).then((r) => r.json());
+
+export const deleteCompetitor = (eventId: string, competitorId: string) =>
+  fetch(`${API_URL}/events/${eventId}/competitors/${competitorId}`, {
+    method: 'DELETE',
+    headers: adminHeaders(),
+  }).then((r) => r.json());
+
 export const listCompetitors = (eventId: string, isAdmin = false): Promise<Competitor[]> =>
   fetch(`${API_URL}/events/${eventId}/competitors`, {
     headers: isAdmin ? adminHeaders() : jsonHeaders(),

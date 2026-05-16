@@ -6,7 +6,7 @@ import { MapPin, Users, Trophy, Plus, Download, CheckCircle, XCircle, Pencil, Tr
 import {
   type Event, type Checkpoint, type Competitor,
   listCheckpoints, createCheckpoint, updateCheckpoint, deleteCheckpoint,
-  listCompetitors, createCompetitor,
+  listCompetitors, createCompetitor, updateCompetitor, deleteCompetitor,
   getResults,
 } from '../../api';
 
@@ -88,6 +88,15 @@ export default function EventDetail({ event, onBack }: Props) {
   const [compVehicle, setCompVehicle] = useState('');
   const [compSaving, setCompSaving] = useState(false);
 
+  // Competitor edit
+  const [editComp, setEditComp] = useState<{ id: string; driver: string; coDriver: string; number: string } | null>(null);
+  const [editCompSaving, setEditCompSaving] = useState(false);
+
+  // Competitor delete confirm
+  const [deleteCompId, setDeleteCompId] = useState<string | null>(null);
+  const [deleteCompName, setDeleteCompName] = useState('');
+  const [deleteCompSaving, setDeleteCompSaving] = useState(false);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -154,6 +163,31 @@ export default function EventDetail({ event, onBack }: Props) {
       await loadData();
     } finally {
       setCpSaving(false);
+    }
+  };
+
+  const handleEditCompetitor = async () => {
+    if (!editComp) return;
+    setEditCompSaving(true);
+    try {
+      await updateCompetitor(event.id, editComp.id, { driver: editComp.driver, coDriver: editComp.coDriver, number: editComp.number });
+      setEditComp(null);
+      await loadData();
+    } finally {
+      setEditCompSaving(false);
+    }
+  };
+
+  const handleDeleteCompetitor = async () => {
+    if (!deleteCompId) return;
+    setDeleteCompSaving(true);
+    try {
+      await deleteCompetitor(event.id, deleteCompId);
+      setDeleteCompId(null);
+      setDeleteCompName('');
+      await loadData();
+    } finally {
+      setDeleteCompSaving(false);
     }
   };
 
@@ -590,21 +624,70 @@ export default function EventDetail({ event, onBack }: Props) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(competitors as Competitor[]).map(comp => (
+            {/* Competitor delete confirmation modal */}
+            {deleteCompId && (
+              <div
+                style={{
+                  position: 'fixed', inset: 0, zIndex: 1000,
+                  background: 'rgba(0,0,0,0.6)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 24,
+                }}
+              >
                 <div
-                  key={comp.id}
                   style={{
                     background: 'var(--bg-secondary)',
                     border: '1px solid var(--border)',
-                    borderRadius: 12,
-                    padding: '14px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    borderRadius: 16,
+                    padding: 24,
+                    maxWidth: 360,
+                    width: '100%',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Smazat posádku?</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 20 }}>
+                    Opravdu smazat posádku <strong style={{ color: 'var(--text-primary)' }}>{deleteCompName}</strong>? Tuto akci nelze vrátit.
+                  </p>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      onClick={() => { setDeleteCompId(null); setDeleteCompName(''); }}
+                      className="btn-secondary"
+                      style={{ flex: 1, minHeight: 40 }}
+                      disabled={deleteCompSaving}
+                    >
+                      Zrušit
+                    </button>
+                    <button
+                      onClick={handleDeleteCompetitor}
+                      disabled={deleteCompSaving}
+                      style={{
+                        flex: 1, minHeight: 40,
+                        background: '#dc2626', color: '#fff',
+                        border: 'none', borderRadius: 10,
+                        fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                      }}
+                    >
+                      {deleteCompSaving ? 'Mažu...' : 'Smazat'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(competitors as Competitor[]).map(comp => (
+                <div key={comp.id}>
+                  <div
+                    style={{
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border)',
+                      borderRadius: editComp?.id === comp.id ? '12px 12px 0 0' : 12,
+                      padding: '14px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
                     <span
                       style={{
                         fontFamily: 'monospace',
@@ -616,7 +699,7 @@ export default function EventDetail({ event, onBack }: Props) {
                     >
                       #{comp.number}
                     </span>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: 14 }}>
                         {comp.driver || comp.name}
                         {comp.coDriver && (
@@ -631,22 +714,110 @@ export default function EventDetail({ event, onBack }: Props) {
                         </div>
                       )}
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      {comp.accessCode && (
+                        <span
+                          style={{
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            background: 'var(--accent-glow)',
+                            color: 'var(--accent-bright)',
+                            border: '1px solid rgba(124,58,237,0.2)',
+                            borderRadius: 8,
+                            padding: '3px 10px',
+                          }}
+                        >
+                          {comp.accessCode}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => setEditComp(editComp?.id === comp.id ? null : { id: comp.id, driver: comp.driver || '', coDriver: comp.coDriver || '', number: String(comp.number) })}
+                        title="Editovat"
+                        style={{
+                          background: editComp?.id === comp.id ? 'rgba(124,58,237,0.15)' : 'var(--bg-tertiary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 8, padding: '6px 8px',
+                          cursor: 'pointer', color: 'var(--text-secondary)',
+                          display: 'flex', alignItems: 'center',
+                        }}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => { setDeleteCompId(comp.id); setDeleteCompName(`#${comp.number} – ${comp.driver || comp.name} / ${comp.coDriver || ''}`); }}
+                        title="Smazat"
+                        style={{
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 8, padding: '6px 8px',
+                          cursor: 'pointer', color: '#dc2626',
+                          display: 'flex', alignItems: 'center',
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                  {comp.accessCode && (
-                    <span
+
+                  {/* Inline edit form */}
+                  {editComp?.id === comp.id && (
+                    <div
                       style={{
-                        fontFamily: 'monospace',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        background: 'var(--accent-glow)',
-                        color: 'var(--accent-bright)',
-                        border: '1px solid rgba(124,58,237,0.2)',
-                        borderRadius: 8,
-                        padding: '3px 10px',
+                        background: 'var(--bg-tertiary)',
+                        border: '1px solid var(--border)',
+                        borderTop: 'none',
+                        borderRadius: '0 0 12px 12px',
+                        padding: '12px 16px',
                       }}
                     >
-                      {comp.accessCode}
-                    </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <input
+                            type="text"
+                            value={editComp.number}
+                            onChange={e => setEditComp({ ...editComp, number: e.target.value })}
+                            placeholder="Č."
+                            className="input-field"
+                            style={{ width: 64, flex: '0 0 auto' }}
+                          />
+                          <input
+                            type="text"
+                            value={editComp.driver}
+                            onChange={e => setEditComp({ ...editComp, driver: e.target.value })}
+                            placeholder="Řidič"
+                            className="input-field"
+                            style={{ flex: 1 }}
+                            autoFocus
+                          />
+                          <input
+                            type="text"
+                            value={editComp.coDriver}
+                            onChange={e => setEditComp({ ...editComp, coDriver: e.target.value })}
+                            placeholder="Spolujezdec"
+                            className="input-field"
+                            style={{ flex: 1 }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <button
+                            onClick={handleEditCompetitor}
+                            disabled={editCompSaving || !editComp.driver || !editComp.coDriver || !editComp.number}
+                            className="btn-primary"
+                            style={{ flex: 1, minHeight: 40, fontSize: 14, padding: '10px' }}
+                          >
+                            {editCompSaving ? 'Ukládám...' : '✓ Uložit změny'}
+                          </button>
+                          <button
+                            onClick={() => setEditComp(null)}
+                            className="btn-secondary"
+                            style={{ minHeight: 40, padding: '10px 16px', flex: '0 0 auto' }}
+                          >
+                            Zrušit
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}
