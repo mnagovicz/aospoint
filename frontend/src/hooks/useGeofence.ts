@@ -12,22 +12,28 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+const COOLDOWN_MS = 120_000; // 2 minutes between passages at the same checkpoint
+const RETRIGGER_GAP_MS = 30_000; // prevent double-trigger while standing inside the radius
+
 export function useGeofence(
   position: GPSPosition | null,
   checkpoints: Checkpoint[],
-  triggeredIds: Set<string>,
+  cooldowns: Record<string, number>,
   onTrigger: (checkpoint: Checkpoint) => void
 ) {
   const lastTriggeredRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (!position) return;
+    const now = Date.now();
 
     for (const cp of checkpoints) {
-      if (triggeredIds.has(cp.id)) continue;
-      const now = Date.now();
+      // Skip if within user-facing cooldown (set after each passage action)
+      if (cooldowns[cp.id] && now - cooldowns[cp.id] < COOLDOWN_MS) continue;
+
+      // Skip if we already triggered this CP recently (prevent double-trigger inside radius)
       const lastTrigger = lastTriggeredRef.current.get(cp.id) || 0;
-      if (now - lastTrigger < 30000) continue; // 30s cooldown
+      if (now - lastTrigger < RETRIGGER_GAP_MS) continue;
 
       const dist = haversineDistance(position.lat, position.lng, cp.lat, cp.lng);
       if (dist <= cp.radius) {
@@ -35,5 +41,5 @@ export function useGeofence(
         onTrigger(cp);
       }
     }
-  }, [position, checkpoints, triggeredIds, onTrigger]);
+  }, [position, checkpoints, cooldowns, onTrigger]);
 }

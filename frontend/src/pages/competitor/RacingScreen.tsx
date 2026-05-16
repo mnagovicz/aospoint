@@ -87,7 +87,8 @@ interface CheckpointDialogState {
 
 export default function RacingScreen({ session, checkpoints }: Props) {
   const { position, error: gpsError } = useGPS();
-  const [triggeredIds, setTriggeredIds] = useState<Set<string>>(new Set());
+  // cooldowns[checkpointId] = timestamp when cooldown started (120s window)
+  const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
   const [dialog, setDialog] = useState<CheckpointDialogState | null>(null);
   const [passages, setPassages] = useState<{ checkpointId: string; action: string; timestamp: string }[]>([]);
   const [syncing, setSyncing] = useState(false);
@@ -113,7 +114,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
     setDialog({ checkpoint: cp, countdown: 15 });
   }, []);
 
-  useGeofence(position, checkpoints, triggeredIds, openDialog);
+  useGeofence(position, checkpoints, cooldowns, openDialog);
 
   // Countdown
   useEffect(() => {
@@ -136,7 +137,8 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   const handleAction = useCallback(async (cp: Checkpoint, action: 'recorded' | 'ignored') => {
     if (countdownRef.current) clearInterval(countdownRef.current);
     setDialog(null);
-    setTriggeredIds(prev => new Set([...prev, cp.id]));
+    // Set cooldown — checkpoint re-enables after 120 s
+    setCooldowns(prev => ({ ...prev, [cp.id]: Date.now() }));
     const timestamp = new Date().toISOString();
     setPassages(prev => [...prev, { checkpointId: cp.id, action, timestamp }]);
 
@@ -157,8 +159,16 @@ export default function RacingScreen({ session, checkpoints }: Props) {
     ? [position.lat, position.lng]
     : [49.2, 17.7];
 
-  const recordedCount = passages.filter(p => p.action === 'recorded').length;
-  const progressPct = checkpoints.length > 0 ? (recordedCount / checkpoints.length) * 100 : 0;
+  const totalPassages = passages.filter(p => p.action === 'recorded').length;
+  const progressPct = checkpoints.length > 0 ? Math.min((totalPassages / checkpoints.length) * 100, 100) : 0;
+
+  // Checkpoints currently within their 2-minute cooldown (used for map visuals)
+  const now = Date.now();
+  const inCooldown = new Set(
+    Object.entries(cooldowns)
+      .filter(([, ts]) => now - ts < 120_000)
+      .map(([id]) => id)
+  );
 
   return (
     <div className="relative" style={{ height: '100dvh', background: 'var(--bg-primary)' }}>
@@ -218,11 +228,10 @@ export default function RacingScreen({ session, checkpoints }: Props) {
                 className="tabular-nums"
                 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}
               >
-                <span style={{ color: 'var(--accent-bright)' }}>{recordedCount}</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>/{checkpoints.length}</span>
+                <span style={{ color: 'var(--accent-bright)' }}>{totalPassages}</span>
               </div>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                CP
+                průjezdů
               </div>
             </div>
           </div>
@@ -255,25 +264,25 @@ export default function RacingScreen({ session, checkpoints }: Props) {
               center={[cp.lat, cp.lng]}
               radius={cp.radius}
               pathOptions={{
-                color: triggeredIds.has(cp.id) ? '#10b981' : '#7c3aed',
-                fillColor: triggeredIds.has(cp.id) ? '#10b981' : '#7c3aed',
+                color: inCooldown.has(cp.id) ? '#10b981' : '#7c3aed',
+                fillColor: inCooldown.has(cp.id) ? '#10b981' : '#7c3aed',
                 fillOpacity: 0.15,
                 weight: 2,
               }}
             />
             <Marker
               position={[cp.lat, cp.lng]}
-              icon={triggeredIds.has(cp.id) ? checkpointDoneIcon : checkpointIcon}
+              icon={inCooldown.has(cp.id) ? checkpointDoneIcon : checkpointIcon}
             >
               <Popup>
                 <div>
                   <strong style={{ color: 'white' }}>{cp.name}</strong>
                   <br />
                   <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Radius: {cp.radius}m</span>
-                  {triggeredIds.has(cp.id) && (
+                  {inCooldown.has(cp.id) && (
                     <>
                       <br />
-                      <span style={{ color: 'var(--success)', fontSize: 12, fontWeight: 600 }}>✓ Splněno</span>
+                      <span style={{ color: 'var(--success)', fontSize: 12, fontWeight: 600 }}>✓ Cooldown 2 min</span>
                     </>
                   )}
                 </div>

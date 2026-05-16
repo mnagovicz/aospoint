@@ -26,6 +26,18 @@ const recordPassage = async (event) => {
       return unauthorized('Neplatný kód závodníka');
     }
 
+    // Count existing passages for this competitor+checkpoint to determine passageNumber
+    const existingResult = await docClient.send(new ScanCommand({
+      TableName: PASSAGES_TABLE,
+      FilterExpression: 'competitorId = :cid AND checkpointId = :cpid',
+      ExpressionAttributeValues: {
+        ':cid': body.competitorId,
+        ':cpid': body.checkpointId,
+      },
+      Select: 'COUNT',
+    }));
+    const passageNumber = (existingResult.Count || 0) + 1;
+
     const item = {
       id: uuidv4(),
       competitorId: body.competitorId,
@@ -34,6 +46,7 @@ const recordPassage = async (event) => {
       action: body.action,
       timestamp: body.timestamp || new Date().toISOString(),
       createdAt: new Date().toISOString(),
+      passageNumber,
     };
 
     await docClient.send(new PutCommand({ TableName: PASSAGES_TABLE, Item: item }));
@@ -94,17 +107,39 @@ const getResults = async (event) => {
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
       const recorded = compPassages.filter(p => p.action === 'recorded');
-      const checkpointMap = {};
-      recorded.forEach(p => { checkpointMap[p.checkpointId] = p; });
+
+      // Group all passages by checkpointId
+      const checkpointPassagesMap = {};
+      compPassages.forEach(p => {
+        if (!checkpointPassagesMap[p.checkpointId]) {
+          checkpointPassagesMap[p.checkpointId] = [];
+        }
+        checkpointPassagesMap[p.checkpointId].push({
+          passageNumber: p.passageNumber || 1,
+          timestamp: p.timestamp,
+          action: p.action,
+        });
+      });
+      // Sort each checkpoint's passages by timestamp
+      Object.values(checkpointPassagesMap).forEach(arr =>
+        arr.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      );
 
       return {
-        competitor: { id: comp.id, name: comp.name, number: comp.number, vehicle: comp.vehicle },
+        competitor: {
+          id: comp.id,
+          name: comp.name,
+          driver: comp.driver,
+          coDriver: comp.coDriver,
+          number: comp.number,
+          vehicle: comp.vehicle,
+        },
         totalCheckpoints: checkpoints.length,
-        recordedCount: Object.keys(checkpointMap).length,
+        recordedCount: recorded.length, // total recorded passages, can exceed CP count
         passages: compPassages,
         checkpointDetails: checkpoints.map(cp => ({
           checkpoint: cp,
-          passage: checkpointMap[cp.id] || null,
+          passages: checkpointPassagesMap[cp.id] || [],
         })),
       };
     }).sort((a, b) => {

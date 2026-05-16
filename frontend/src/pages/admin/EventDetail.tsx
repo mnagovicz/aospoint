@@ -231,7 +231,10 @@ export default function EventDetail({ event, onBack }: Props) {
     const rows = [['Řidič', 'Spolujezdec', 'Číslo', 'Vozidlo', 'Zaznamenáno', 'Celkem CP', 'Časy'].join(',')];
     for (const r of results.results) {
       const recorded = r.passages.filter((p: any) => p.action === 'recorded');
-      const times = recorded.map((p: any) => new Date(p.timestamp).toLocaleTimeString('cs-CZ')).join(' | ');
+      const times = recorded
+        .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+        .map((p: any) => `${new Date(p.timestamp).toLocaleTimeString('cs-CZ')} (#${p.passageNumber ?? 1})`)
+        .join(' | ');
       const driver = r.competitor.driver || r.competitor.name;
       const coDriver = r.competitor.coDriver || '';
       rows.push([driver, coDriver, r.competitor.number, r.competitor.vehicle || '', r.recordedCount, r.totalCheckpoints, `"${times}"`].join(','));
@@ -966,46 +969,68 @@ export default function EventDetail({ event, onBack }: Props) {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                          {r.checkpointDetails.map((cd: any, i: number) => (
-                            <div
-                              key={cd.checkpoint.id}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 10,
-                                padding: '8px 0',
-                                borderTop: i === 0 ? `1px solid var(--border)` : `1px solid var(--border)`,
-                                fontSize: 13,
-                              }}
-                            >
-                              {cd.passage?.action === 'recorded' ? (
-                                <CheckCircle size={15} color="var(--success)" />
-                              ) : cd.passage ? (
-                                <XCircle size={15} color="var(--danger)" />
-                              ) : (
+                          {/* Flatten all passages across checkpoints, sort chronologically */}
+                          {r.checkpointDetails
+                            .flatMap((cd: any) =>
+                              (cd.passages && cd.passages.length > 0
+                                ? cd.passages
+                                : [null]
+                              ).map((p: any) => ({ checkpoint: cd.checkpoint, passage: p }))
+                            )
+                            .sort((a: any, b: any) => {
+                              if (!a.passage) return 1;
+                              if (!b.passage) return -1;
+                              return new Date(a.passage.timestamp).getTime() - new Date(b.passage.timestamp).getTime();
+                            })
+                            .map((entry: any, i: number) => {
+                              const { checkpoint, passage } = entry;
+                              return (
                                 <div
+                                  key={`${checkpoint.id}-${i}`}
                                   style={{
-                                    width: 15,
-                                    height: 15,
-                                    borderRadius: 999,
-                                    border: '1.5px solid var(--text-muted)',
-                                    flexShrink: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    padding: '8px 0',
+                                    borderTop: '1px solid var(--border)',
+                                    fontSize: 13,
                                   }}
-                                />
-                              )}
-                              <span style={{ color: 'var(--text-secondary)', flex: 1 }}>
-                                {cd.checkpoint.name}
-                              </span>
-                              {cd.passage?.action === 'recorded' && (
-                                <span
-                                  className="tabular-nums"
-                                  style={{ color: 'var(--text-muted)', fontSize: 12 }}
                                 >
-                                  {new Date(cd.passage.timestamp).toLocaleTimeString('cs-CZ')}
-                                </span>
-                              )}
-                            </div>
-                          ))}
+                                  {passage?.action === 'recorded' ? (
+                                    <CheckCircle size={15} color="var(--success)" />
+                                  ) : passage ? (
+                                    <XCircle size={15} color="var(--danger)" />
+                                  ) : (
+                                    <div
+                                      style={{
+                                        width: 15,
+                                        height: 15,
+                                        borderRadius: 999,
+                                        border: '1.5px solid var(--text-muted)',
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                  )}
+                                  <span style={{ color: 'var(--text-secondary)', flex: 1 }}>
+                                    {checkpoint.name}
+                                    {passage && (
+                                      <span style={{ color: 'var(--text-muted)', marginLeft: 4 }}>
+                                        — Průjezd {passage.passageNumber ?? 1}
+                                      </span>
+                                    )}
+                                  </span>
+                                  {passage?.action === 'recorded' && (
+                                    <span
+                                      className="tabular-nums"
+                                      style={{ color: 'var(--text-muted)', fontSize: 12 }}
+                                    >
+                                      {new Date(passage.timestamp).toLocaleTimeString('cs-CZ')}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })
+                          }
                         </div>
                       </div>
                     );
