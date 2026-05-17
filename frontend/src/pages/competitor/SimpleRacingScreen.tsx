@@ -31,6 +31,55 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
   const [finished, setFinished] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // iOS wiggle mode pro výkaz
+  const [wiggleMode, setWiggleMode] = useState(false);
+  const [localNames, setLocalNames] = useState<Record<string, string>>({});
+  const [renameIdx, setRenameIdx] = useState<number | null>(null);
+  const [renameVal, setRenameVal] = useState('');
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragSrcIdx = useRef<number | null>(null);
+
+  const startLongPress = (idx: number) => {
+    longPressTimer.current = setTimeout(() => {
+      setWiggleMode(true);
+      setRenameIdx(null);
+    }, 500);
+    void idx; // used indirectly
+  };
+  const cancelLongPress = () => { if (longPressTimer.current) clearTimeout(longPressTimer.current); };
+
+  const handleWiggleTap = (idx: number, cp: typeof checkpoints[0] | undefined) => {
+    const currentName = localNames[idx] ?? (cp?.code || cp?.name || '?');
+    setRenameIdx(idx);
+    setRenameVal(currentName);
+  };
+
+  const handleRenameConfirm = () => {
+    if (renameIdx !== null) setLocalNames(prev => ({ ...prev, [renameIdx]: renameVal }));
+    setRenameIdx(null);
+  };
+
+  const handleRemovePassage = (idx: number) => {
+    const recIndices = passages.reduce<number[]>((acc, p, i) => { if (p.action === 'recorded') acc.push(i); return acc; }, []);
+    const realIdx = recIndices[idx];
+    if (realIdx !== undefined) setPassages(prev => prev.filter((_, i) => i !== realIdx));
+    setLocalNames(prev => { const n = { ...prev }; delete n[idx]; return n; });
+  };
+
+  const handleDragStart = (idx: number) => { dragSrcIdx.current = idx; };
+  const handleDrop = (targetIdx: number) => {
+    const src = dragSrcIdx.current;
+    if (src === null || src === targetIdx) return;
+    setPassages(prev => {
+      const recorded = prev.filter(p => p.action === 'recorded');
+      const others = prev.filter(p => p.action !== 'recorded');
+      const [moved] = recorded.splice(src, 1);
+      recorded.splice(targetIdx, 0, moved);
+      return [...recorded, ...others];
+    });
+    dragSrcIdx.current = null;
+  };
+
   useEffect(() => {
     const pending = loadPendingPassages();
     if (pending.length > 0) {
@@ -82,15 +131,7 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
     setCooldowns(prev => { const n = { ...prev }; delete n[checkpointId]; return n; });
   }, []);
 
-  // Bug 2 fix: remove last recorded passage from výkaz
-  const handleRemoveLastPassage = useCallback(() => {
-    setPassages(prev => {
-      const lastRecordedIdx = [...prev].reverse().findIndex(p => p.action === 'recorded');
-      if (lastRecordedIdx === -1) return prev;
-      const idx = prev.length - 1 - lastRecordedIdx;
-      return prev.filter((_, i) => i !== idx);
-    });
-  }, []);
+
 
   useGeofence(position, checkpoints, cooldowns, openDialog, handleExitGeofence);
 
@@ -167,27 +208,59 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
         </div>
       </div>
 
-      {/* Jízdní výkaz — mřížka zprava doleva, pak další řádek */}
+      {/* Jízdní výkaz — iOS wiggle mode */}
       <div style={{ flexShrink: 0, borderBottom: '1px solid #1a1a2e', padding: '8px 16px', background: 'rgba(10,10,15,0.96)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Jízdní výkaz</div>
-          {recorded.length > 0 && (
-            <button
-              onClick={handleRemoveLastPassage}
-              style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-            >
-              ✕ smazat poslední
-            </button>
-          )}
+          {wiggleMode
+            ? <button onClick={() => { setWiggleMode(false); setRenameIdx(null); }} style={{ background: 'none', border: 'none', color: '#4ecca3', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Hotovo</button>
+            : recorded.length > 0 && <div style={{ fontSize: 10, color: '#374151' }}>Podrž pro úpravu</div>
+          }
         </div>
+
+        {/* Rename dialog */}
+        {renameIdx !== null && (
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+            <input
+              autoFocus
+              value={renameVal}
+              onChange={e => setRenameVal(e.target.value.toUpperCase())}
+              style={{ flex: 1, background: '#16213e', border: '1px solid #4ecca3', borderRadius: 6, padding: '6px 10px', color: 'white', fontFamily: 'monospace', fontWeight: 700, fontSize: 16, letterSpacing: '0.1em' }}
+              onKeyDown={e => { if (e.key === 'Enter') handleRenameConfirm(); if (e.key === 'Escape') setRenameIdx(null); }}
+            />
+            <button onClick={handleRenameConfirm} style={{ background: '#4ecca3', color: '#0a0a0f', border: 'none', borderRadius: 6, padding: '6px 12px', fontWeight: 700, cursor: 'pointer' }}>OK</button>
+            <button onClick={() => setRenameIdx(null)} style={{ background: 'transparent', color: '#6b7280', border: '1px solid #1a1a2e', borderRadius: 6, padding: '6px 10px', cursor: 'pointer' }}>✕</button>
+          </div>
+        )}
+
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {recorded.map((p, idx) => {
             const cp = checkpoints.find(c => c.id === p.checkpointId);
-            const code = cp?.code || cp?.name || '?';
+            const code = localNames[idx] ?? (cp?.code || cp?.name || '?');
             return (
-              <div key={idx} style={{
-                display: 'flex', gap: 3,
-              }}>
+              <div
+                key={idx}
+                className={wiggleMode ? 'wiggle' : ''}
+                draggable={wiggleMode}
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={e => e.preventDefault()}
+                onDrop={() => handleDrop(idx)}
+                onMouseDown={() => startLongPress(idx)}
+                onMouseUp={cancelLongPress}
+                onMouseLeave={cancelLongPress}
+                onTouchStart={() => startLongPress(idx)}
+                onTouchEnd={cancelLongPress}
+                onTouchMove={cancelLongPress}
+                onClick={() => wiggleMode && handleWiggleTap(idx, cp)}
+                style={{ position: 'relative', display: 'flex', gap: 3, cursor: wiggleMode ? 'grab' : 'default', animationDelay: `${idx * 0.04}s` }}
+              >
+                {/* X badge */}
+                {wiggleMode && (
+                  <button
+                    onClick={e => { e.stopPropagation(); handleRemovePassage(idx); }}
+                    style={{ position: 'absolute', top: -7, left: -7, zIndex: 10, width: 18, height: 18, borderRadius: '50%', background: '#dc2626', border: '1.5px solid #fff', color: 'white', fontWeight: 900, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, lineHeight: 1 }}
+                  >✕</button>
+                )}
                 {code.split('').map((char, ci) => (
                   <div key={ci} style={{
                     width: 36, height: 40, flexShrink: 0,
