@@ -536,18 +536,19 @@ export default function EventDetail({ event, onBack }: Props) {
                       {i + 1}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontWeight: 600, fontSize: 14 }}>{cp.name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {cp.code && (
+                          <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 22, color: 'white', letterSpacing: '0.05em' }}>{cp.code}</span>
+                        )}
                         <span style={{
                           fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
                           background: cp.type === 'PK' ? 'rgba(124,58,237,0.2)' : 'rgba(78,204,163,0.15)',
                           color: cp.type === 'PK' ? '#a78bfa' : 'var(--accent-bright)',
                           border: `1px solid ${cp.type === 'PK' ? 'rgba(124,58,237,0.4)' : 'rgba(78,204,163,0.3)'}`,
                         }}>{cp.type || 'SPK'}</span>
-                        {cp.code && <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-secondary)' }}>[{cp.code}]</span>}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                        {cp.lat.toFixed(5)}, {cp.lng.toFixed(5)} · r={cp.radius}m
+                        {cp.name} · r={cp.radius}m
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
