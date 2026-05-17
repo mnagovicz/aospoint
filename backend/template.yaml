@@ -104,6 +104,20 @@ Resources:
             Path: /events/{id}
             Method: GET
 
+  DeleteEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/events.deleteEvent
+      CodeUri: .
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AosPointApi
+            Path: /events/{id}
+            Method: DELETE
+
   CreateCheckpointFunction:
     Type: AWS::Serverless::Function
     Properties:

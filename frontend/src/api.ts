@@ -69,6 +69,12 @@ export const listEvents = (accessCode?: string): Promise<Event[]> => {
 export const getEvent = (id: string): Promise<Event> =>
   fetch(`${API_URL}/events/${id}`, { headers: adminHeaders() }).then((r) => r.json());
 
+export const deleteEvent = (id: string) =>
+  fetch(`${API_URL}/events/${id}`, {
+    method: 'DELETE',
+    headers: adminHeaders(),
+  }).then((r) => r.json());
+
 // Checkpoints
 export const createCheckpoint = (
   eventId: string,

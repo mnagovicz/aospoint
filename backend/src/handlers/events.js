@@ -1,4 +1,4 @@
-const { PutCommand, GetCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, GetCommand, ScanCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const { docClient, ok, created, badRequest, unauthorized, notFound, serverError, requireAdmin } = require('./utils');
 
@@ -70,4 +70,21 @@ const getEvent = async (event) => {
   }
 };
 
-module.exports = { createEvent, listEvents, getEvent };
+const deleteEvent = async (event) => {
+  try {
+    if (!requireAdmin(event)) return unauthorized();
+    const { id } = event.pathParameters;
+
+    const existing = await docClient.send(new GetCommand({ TableName: TABLE, Key: { id } }));
+    if (!existing.Item) return notFound('Soutěž nenalezena');
+
+    // Smazat soutěž
+    await docClient.send(new DeleteCommand({ TableName: TABLE, Key: { id } }));
+    return ok({ deleted: true });
+  } catch (err) {
+    console.error(err);
+    return serverError(err.message);
+  }
+};
+
+module.exports = { createEvent, listEvents, getEvent, deleteEvent };

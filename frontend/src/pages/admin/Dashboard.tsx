@@ -222,6 +222,59 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Delete Event Modal */}
+      {deleteConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+          padding: 24,
+        }}>
+          <div style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: 16,
+            padding: '24px 20px',
+            width: '100%', maxWidth: 340,
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🗑️</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: 'white', marginBottom: 8 }}>Smazat soutěž?</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>
+              <strong style={{ color: 'white' }}>{deleteConfirm.name}</strong>
+            </div>
+            <div style={{ color: '#f87171', fontSize: 12, marginBottom: 24 }}>
+              Smaže se i všechny checkpointy, závodníci a průjezdy.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 10,
+                  background: 'var(--bg-tertiary)', border: '1px solid var(--border)',
+                  color: 'var(--text-secondary)', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                }}
+              >
+                Zrušit
+              </button>
+              <button
+                onClick={() => handleDeleteEvent(deleteConfirm)}
+                disabled={deleting}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 10,
+                  background: '#dc2626', border: 'none',
+                  color: 'white', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                  opacity: deleting ? 0.6 : 1,
+                }}
+              >
+                {deleting ? 'Mazám...' : 'Smazat'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
