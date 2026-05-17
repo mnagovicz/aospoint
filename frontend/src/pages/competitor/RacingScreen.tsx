@@ -66,6 +66,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   const [mapType, setMapType] = useState<'basic' | 'aerial'>('basic');
   const [followPosition, setFollowPosition] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ idx: number; name: string } | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync pending passages on mount
@@ -140,11 +141,12 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   const handleDeletePassage = useCallback(async (passageIdx: number) => {
     const recorded = passages.filter(p => p.action === 'recorded');
     const p = recorded[passageIdx];
-    if (!p?.id) return;
-    // Zkontroluj zda je za timto prujedem nejaka PK
+    if (!p?.id) {
+      alert('Průjezd nelze smazat — nebyl synchronizován se serverem.');
+      return;
+    }
     const cp = checkpoints.find(c => c.id === p.checkpointId);
-    if (cp?.type === 'PK') return; // PK nelze smazat
-    // Zkontroluj jestli za nim existuje PK v passagich
+    if (cp?.type === 'PK') return;
     const afterPassages = recorded.slice(passageIdx + 1);
     const hasLaterPK = afterPassages.some(ap => {
       const acp = checkpoints.find(c => c.id === ap.checkpointId);
@@ -258,7 +260,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
                     const canDelete = !isPK && !hasLaterPK;
                     return (
                       <div key={rowIdx} style={{ display: 'flex', gap: 3, position: 'relative', cursor: canDelete ? 'pointer' : 'default' }}
-                        onClick={() => canDelete && window.confirm(`Smazat průjezd ${name}?`) && handleDeletePassage(rowIdx)}
+                        onClick={() => canDelete && setDeleteConfirm({ idx: rowIdx, name })}
                       >
                         {chars.map((char, ci) => (
                           <div key={ci} style={{
@@ -504,6 +506,55 @@ export default function RacingScreen({ session, checkpoints }: Props) {
                   <XCircle size={18} />
                   IGNOROVAT
                 </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {deleteConfirm && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+            padding: 24,
+          }}
+        >
+          <div style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: 16,
+            padding: '24px 20px',
+            width: '100%', maxWidth: 320,
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🗑️</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: 'white', marginBottom: 8 }}>Smazat průjezd?</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>
+              Checkpoint <span style={{ color: 'var(--accent-bright)', fontWeight: 700, fontFamily: 'monospace' }}>{deleteConfirm.name}</span> bude odebrán z výkazu.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 10,
+                  background: 'var(--bg-tertiary)', border: '1px solid var(--border)',
+                  color: 'var(--text-secondary)', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                }}
+              >
+                Zrušit
+              </button>
+              <button
+                onClick={() => { handleDeletePassage(deleteConfirm.idx); setDeleteConfirm(null); }}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 10,
+                  background: '#dc2626', border: 'none',
+                  color: 'white', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                }}
+              >
+                Smazat
               </button>
             </div>
           </div>
