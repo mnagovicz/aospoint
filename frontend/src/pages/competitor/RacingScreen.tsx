@@ -138,36 +138,36 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
 
-      {/* Top panel: stavové info (1/3) + jízdní výkaz (2/3) */}
-      <div style={{ flexShrink: 0, display: 'flex', borderBottom: '1px solid var(--border)', background: 'rgba(10,10,15,0.96)', zIndex: 50, maxHeight: '35vh' }}>
+      {/* Top panel: stavové info + jízdní výkaz — oba přes celou šířku */}
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', borderBottom: '1px solid var(--border)', background: 'rgba(10,10,15,0.96)', zIndex: 50 }}>
 
-        {/* Stavové info — 1/3 šířky */}
-        <div style={{ flex: 1, borderRight: '1px solid var(--border)', padding: '12px 14px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+        {/* Stavové info — celá šířka */}
+        <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '1px solid var(--border)' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {session.competitorName}
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'white' }}>
+              {session.competitorName}{' '}
+              <span style={{ color: 'var(--accent-bright)', fontFamily: 'monospace', fontWeight: 600 }}>#{session.competitorNumber}</span>
             </div>
-            <div style={{ color: 'var(--accent-bright)', fontFamily: 'monospace', fontWeight: 600, fontSize: 13 }}>
-              #{session.competitorNumber}
-            </div>
-            <div style={{ fontSize: 11, color: gpsError ? 'var(--danger)' : position ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3, marginTop: 6 }}>
+            <div style={{ fontSize: 11, color: gpsError ? 'var(--danger)' : position ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3, marginTop: 3 }}>
               {gpsError ? <><WifiOff size={10} /> GPS chyba</> : position ? <><Navigation size={10} /> ±{Math.round(position.accuracy)}m</> : <><Radio size={10} /> GPS...</>}
             </div>
           </div>
-          <div>
-            <div className="badge-success" style={{ fontSize: 10, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="badge-success" style={{ fontSize: 10, padding: '2px 8px' }}>
               <span className="live-dot" /> LIVE
             </div>
-            <div className="tabular-nums" style={{ fontSize: 26, fontWeight: 800, lineHeight: 1, color: 'var(--accent-bright)' }}>{totalPassages}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>průjezdů</div>
-            <div className="progress-bar" style={{ marginTop: 8 }}>
-              <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+            <div style={{ textAlign: 'right' }}>
+              <div className="tabular-nums" style={{ fontSize: 22, fontWeight: 800, lineHeight: 1, color: 'var(--accent-bright)' }}>{totalPassages}</div>
+              <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>průjezdů</div>
             </div>
+          </div>
+          <div className="progress-bar" style={{ marginTop: 8 }}>
+            <div className="progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
         </div>
 
-        {/* Jízdní výkaz — 2/3 šířky */}
-        <div style={{ flex: 2, overflowY: 'auto', padding: '8px 10px 8px', minWidth: 0 }}>
+        {/* Jízdní výkaz — celá šířka */}
+        <div style={{ padding: '8px 16px 10px', overflowX: 'auto' }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Jízdní výkaz</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {[0, 1, 2].map(rowIdx => {
