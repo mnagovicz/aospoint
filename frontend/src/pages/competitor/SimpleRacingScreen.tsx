@@ -47,8 +47,6 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
     setDialog({ checkpoint: cp, countdown: 15 });
   }, []);
 
-  useGeofence(position, checkpoints, cooldowns, openDialog);
-
   useEffect(() => {
     if (!dialog) return;
     if (countdownRef.current) clearInterval(countdownRef.current);
@@ -78,6 +76,23 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
       savePendingPassage({ competitorId: session.competitorId, checkpointId: cp.id, stageId: '', action, competitorCode: session.competitorCode, timestamp });
     }
   }, [session]);
+
+  // Bug 3 fix: reset cooldown when competitor exits geofence → enables second pass
+  const handleExitGeofence = useCallback((checkpointId: string) => {
+    setCooldowns(prev => { const n = { ...prev }; delete n[checkpointId]; return n; });
+  }, []);
+
+  // Bug 2 fix: remove last recorded passage from výkaz
+  const handleRemoveLastPassage = useCallback(() => {
+    setPassages(prev => {
+      const lastRecordedIdx = [...prev].reverse().findIndex(p => p.action === 'recorded');
+      if (lastRecordedIdx === -1) return prev;
+      const idx = prev.length - 1 - lastRecordedIdx;
+      return prev.filter((_, i) => i !== idx);
+    });
+  }, []);
+
+  useGeofence(position, checkpoints, cooldowns, openDialog, handleExitGeofence);
 
   const recorded = passages.filter(p => p.action === 'recorded');
   const totalPassages = recorded.length;
@@ -152,30 +167,42 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
         </div>
       </div>
 
-      {/* Jízdní výkaz */}
+      {/* Jízdní výkaz — mřížka zprava doleva, pak další řádek */}
       <div style={{ flexShrink: 0, borderBottom: '1px solid #1a1a2e', padding: '8px 16px', background: 'rgba(10,10,15,0.96)' }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Jízdní výkaz</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[0, 1, 2].map(rowIdx => {
-            const p = recorded[rowIdx];
-            const cp = p ? checkpoints.find(c => c.id === p.checkpointId) : null;
-            const name = cp?.code || cp?.name || '';
-            const chars = name.length > 0 ? name.split('') : Array.from({ length: 6 }).map(() => '');
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Jízdní výkaz</div>
+          {recorded.length > 0 && (
+            <button
+              onClick={handleRemoveLastPassage}
+              style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              ✕ smazat poslední
+            </button>
+          )}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {recorded.map((p, idx) => {
+            const cp = checkpoints.find(c => c.id === p.checkpointId);
+            const code = cp?.code || cp?.name || '?';
             return (
-              <div key={rowIdx} style={{ display: 'flex', gap: 6 }}>
-                {chars.map((char, ci) => (
+              <div key={idx} style={{
+                display: 'flex', gap: 3,
+              }}>
+                {code.split('').map((char, ci) => (
                   <div key={ci} style={{
-                    width: 52, height: 52, flexShrink: 0,
-                    border: `1.5px solid ${char ? '#4ecca3' : '#1a1a2e'}`,
-                    borderRadius: 6,
+                    width: 36, height: 40, flexShrink: 0,
+                    border: `1.5px solid ${cp?.type === 'PK' ? '#a78bfa' : '#4ecca3'}`,
+                    borderRadius: 5,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: 'monospace', fontWeight: 800, fontSize: 24, color: 'white',
-                    opacity: char ? 1 : 0.4,
+                    fontFamily: 'monospace', fontWeight: 800, fontSize: 18, color: 'white',
                   }}>{char}</div>
                 ))}
               </div>
             );
           })}
+          {recorded.length === 0 && (
+            <div style={{ fontSize: 12, color: '#374151', padding: '4px 0' }}>Zatím žádné průjezdy</div>
+          )}
         </div>
       </div>
 
