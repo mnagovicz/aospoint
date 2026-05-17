@@ -64,6 +64,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   const [passages, setPassages] = useState<{ checkpointId: string; action: string; timestamp: string }[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [mapType, setMapType] = useState<'basic' | 'aerial'>('basic');
+  const [followPosition, setFollowPosition] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync pending passages on mount
@@ -222,13 +223,34 @@ export default function RacingScreen({ session, checkpoints }: Props) {
                 weight: 1,
               }}
             />
-            <MapFollow lat={position.lat} lng={position.lng} />
+            {followPosition && <MapFollow lat={position.lat} lng={position.lng} />}
           </>
         )}
       </MapContainer>
 
-      {/* Map type toggle — inside relative wrapper, above map */}
-      <div style={{ position: 'absolute', bottom: 24, right: 16, zIndex: 1000 }}>
+      {/* Map controls — inside relative wrapper, above map */}
+      <div style={{ position: 'absolute', bottom: 24, right: 16, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Follow position toggle */}
+        <button
+          onClick={() => setFollowPosition(prev => !prev)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: followPosition ? 'rgba(124,58,237,0.85)' : 'rgba(10,10,15,0.92)',
+            backdropFilter: 'blur(12px)',
+            border: `1px solid ${followPosition ? '#7c3aed' : 'var(--border)'}`,
+            borderRadius: 12,
+            padding: '10px 16px',
+            color: followPosition ? 'white' : 'var(--text-muted)',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+          }}
+        >
+          <Navigation size={16} />
+          {followPosition ? 'Sleduju' : 'Sledovat'}
+        </button>
         <button
           onClick={() => setMapType(prev => prev === 'basic' ? 'aerial' : 'basic')}
           style={{
