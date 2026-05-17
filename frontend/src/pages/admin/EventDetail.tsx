@@ -86,7 +86,7 @@ export default function EventDetail({ event, onBack }: Props) {
   const [cpSaving, setCpSaving] = useState(false);
 
   // Checkpoint edit
-  const [editCp, setEditCp] = useState<{ id: string; name: string; radius: number } | null>(null);
+  const [editCp, setEditCp] = useState<{ id: string; name: string; code: string; radius: number } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   // Checkpoint delete confirm
@@ -150,7 +150,7 @@ export default function EventDetail({ event, onBack }: Props) {
     if (!editCp) return;
     setEditSaving(true);
     try {
-      await updateCheckpoint(event.id, editCp.id, { name: editCp.name, radius: editCp.radius });
+      await updateCheckpoint(event.id, editCp.id, { name: editCp.name, code: editCp.code, radius: editCp.radius });
       setEditCp(null);
       await loadData();
     } finally {
@@ -548,7 +548,7 @@ export default function EventDetail({ event, onBack }: Props) {
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                       <button
-                        onClick={() => setEditCp(editCp?.id === cp.id ? null : { id: cp.id, name: cp.name, radius: cp.radius })}
+                        onClick={() => setEditCp(editCp?.id === cp.id ? null : { id: cp.id, name: cp.name, code: cp.code || '', radius: cp.radius })}
                         title="Editovat"
                         style={{
                           background: editCp?.id === cp.id ? 'rgba(124,58,237,0.15)' : 'var(--bg-tertiary)',
@@ -588,14 +588,26 @@ export default function EventDetail({ event, onBack }: Props) {
                       }}
                     >
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <input
-                          type="text"
-                          value={editCp.name}
-                          onChange={e => setEditCp({ ...editCp, name: e.target.value })}
-                          placeholder="Název checkpointu"
-                          className="input-field"
-                          autoFocus
-                        />
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <input
+                            type="text"
+                            value={editCp.code}
+                            onChange={e => setEditCp({ ...editCp, code: e.target.value.toUpperCase() })}
+                            placeholder="Kód (A, B3...)"
+                            className="input-field"
+                            style={{ flex: '0 0 90px', fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.1em', fontSize: 16 }}
+                            maxLength={4}
+                            autoFocus
+                          />
+                          <input
+                            type="text"
+                            value={editCp.name}
+                            onChange={e => setEditCp({ ...editCp, name: e.target.value })}
+                            placeholder="Název místa"
+                            className="input-field"
+                            style={{ flex: 1 }}
+                          />
+                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <label style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                             Radius (m)

@@ -83,7 +83,7 @@ export const createCheckpoint = (
 export const updateCheckpoint = (
   eventId: string,
   checkpointId: string,
-  data: { name?: string; lat?: number; lng?: number; radius?: number }
+  data: { name?: string; code?: string; lat?: number; lng?: number; radius?: number }
 ) =>
   fetch(`${API_URL}/events/${eventId}/checkpoints/${checkpointId}`, {
     method: 'PUT',

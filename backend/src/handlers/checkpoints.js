@@ -62,6 +62,7 @@ const updateCheckpoint = async (event) => {
     let expr = [];
 
     if (body.name !== undefined) { expr.push('#name = :name'); names['#name'] = 'name'; values[':name'] = body.name; }
+    if (body.code !== undefined) { expr.push('code = :code'); values[':code'] = body.code.toUpperCase(); }
     if (body.lat !== undefined) { expr.push('lat = :lat'); values[':lat'] = parseFloat(body.lat); }
     if (body.lng !== undefined) { expr.push('lng = :lng'); values[':lng'] = parseFloat(body.lng); }
     if (body.radius !== undefined) { expr.push('radius = :radius'); values[':radius'] = parseInt(body.radius); }
