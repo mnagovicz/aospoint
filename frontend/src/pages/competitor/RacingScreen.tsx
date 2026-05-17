@@ -235,34 +235,52 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         {/* Jízdní výkaz — celá šířka */}
         <div style={{ padding: '8px 16px 12px' }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Jízdní výkaz</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {[0, 1, 2].map(rowIdx => {
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignContent: 'flex-start' }}>
+            {(() => {
               const recorded = passages.filter(p => p.action === 'recorded');
-              const p = recorded[rowIdx];
-              const cp = p ? checkpoints.find(c => c.id === p.checkpointId) : null;
-              const name = cp?.code || cp?.name || '';
-              const chars = name.length > 0 ? name.split('') : Array.from({ length: 6 }).map(() => '');
-              const isPK = cp?.type === 'PK';
-              const hasLaterPK = p ? recorded.slice(rowIdx + 1).some(ap => checkpoints.find(c => c.id === ap.checkpointId)?.type === 'PK') : false;
-              const canDelete = !!p && !isPK && !hasLaterPK;
               return (
-                <div key={rowIdx} style={{ display: 'flex', gap: 6, position: 'relative', cursor: canDelete ? 'pointer' : 'default' }}
-                  onClick={() => canDelete && window.confirm(`Smazat průjezd ${name}?`) && handleDeletePassage(rowIdx)}
-                >
-                  {chars.map((char, ci) => (
-                    <div key={ci} style={{
-                      width: 52, height: 52, flexShrink: 0,
-                      border: `1.5px solid ${char ? (isPK ? '#a78bfa' : hasLaterPK ? '#6b7280' : 'var(--accent-bright)') : 'var(--border)'}`,
-                      borderRadius: 6,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'monospace', fontWeight: 800, fontSize: 24, color: 'white',
-                      opacity: char ? 1 : 0.3,
-                    }}>{char}</div>
+                <>
+                  {/* Projeté checkpointy */}
+                  {recorded.map((p, rowIdx) => {
+                    const cp = checkpoints.find(c => c.id === p.checkpointId);
+                    const name = cp?.code || cp?.name || '';
+                    const chars = name.split('');
+                    const isPK = cp?.type === 'PK';
+                    const hasLaterPK = recorded.slice(rowIdx + 1).some(ap => checkpoints.find(c => c.id === ap.checkpointId)?.type === 'PK');
+                    const canDelete = !isPK && !hasLaterPK;
+                    return (
+                      <div key={rowIdx} style={{ display: 'flex', gap: 3, position: 'relative', cursor: canDelete ? 'pointer' : 'default' }}
+                        onClick={() => canDelete && window.confirm(`Smazat průjezd ${name}?`) && handleDeletePassage(rowIdx)}
+                      >
+                        {chars.map((char, ci) => (
+                          <div key={ci} style={{
+                            width: 34, height: 34, flexShrink: 0,
+                            border: `1.5px solid ${isPK ? '#a78bfa' : hasLaterPK ? '#6b7280' : 'var(--accent-bright)'}`,
+                            borderRadius: 5,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontFamily: 'monospace', fontWeight: 800, fontSize: 17, color: 'white',
+                          }}>{char}</div>
+                        ))}
+                        {isPK && <div style={{ position: 'absolute', right: 0, top: -11, fontSize: 8, color: '#a78bfa', fontWeight: 700 }}>PK</div>}
+                      </div>
+                    );
+                  })}
+                  {/* Prázdné sloty pro zbývající checkpointy */}
+                  {Array.from({ length: Math.max(0, checkpoints.length - recorded.length) }).map((_, i) => (
+                    <div key={`empty-${i}`} style={{ display: 'flex', gap: 3 }}>
+                      {Array.from({ length: 4 }).map((_, ci) => (
+                        <div key={ci} style={{
+                          width: 34, height: 34,
+                          border: '1.5px solid var(--border)',
+                          borderRadius: 5,
+                          opacity: 0.25,
+                        }} />
+                      ))}
+                    </div>
                   ))}
-                  {isPK && name && <div style={{ position: 'absolute', right: 2, top: 2, fontSize: 9, color: '#a78bfa', fontWeight: 700 }}>PK</div>}
-                </div>
+                </>
               );
-            })}
+            })()}
           </div>
         </div>
       </div>
