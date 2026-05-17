@@ -172,15 +172,15 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   );
 
   return (
-    <div className="relative" style={{ height: '100dvh', background: 'var(--bg-primary)' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
       {/* Header */}
       <div
-        className="absolute top-0 left-0 right-0 z-50"
         style={{
-          background: 'rgba(10,10,15,0.92)',
-          backdropFilter: 'blur(12px)',
+          flexShrink: 0,
+          background: 'rgba(10,10,15,0.96)',
           borderBottom: '1px solid var(--border)',
           padding: '12px 16px',
+          zIndex: 50,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -248,7 +248,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
       <MapContainer
         center={defaultCenter}
         zoom={14}
-        style={{ height: '100%', width: '100%' }}
+        style={{ flex: 1, minHeight: 0, width: '100%' }}
         zoomControl={false}
       >
         <TileLayer
