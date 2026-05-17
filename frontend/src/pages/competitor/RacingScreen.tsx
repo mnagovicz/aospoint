@@ -167,27 +167,39 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         </div>
 
         {/* Jízdní výkaz — 2/3 šířky */}
-        <div style={{ flex: 2, overflowY: 'auto', padding: '10px 12px', minWidth: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>📋 Jízdní výkaz</div>
-          {passages.filter(p => p.action === 'recorded').length === 0 ? (
-            <div style={{ color: 'var(--text-muted)', fontSize: 12, paddingTop: 8 }}>Zatím žádné průjezdy</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {passages.filter(p => p.action === 'recorded').map((p, i) => {
-                const cp = checkpoints.find(c => c.id === p.checkpointId);
-                const timeStr = new Date(p.timestamp).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                return (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px' }}>
-                    <div style={{ color: 'var(--success)', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>✓</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, color: 'white', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cp?.name ?? '?'}</div>
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>#{i + 1} · {timeStr}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <div style={{ flex: 2, overflowY: 'auto', padding: '8px 10px', minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Jízdní výkaz</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {[0, 1, 2].map(rowIdx => {
+              const recorded = passages.filter(p => p.action === 'recorded');
+              const p = recorded[rowIdx];
+              const cp = p ? checkpoints.find(c => c.id === p.checkpointId) : null;
+              const name = cp?.name ?? '';
+              return (
+                <div key={rowIdx} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                  {name.length > 0
+                    ? name.split('').map((char, ci) => (
+                        <div key={ci} style={{
+                          width: 26, height: 26, flexShrink: 0,
+                          border: '1.5px solid var(--accent-bright)',
+                          borderRadius: 4,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: 'white',
+                        }}>{char}</div>
+                      ))
+                    : Array.from({ length: 6 }).map((_, ci) => (
+                        <div key={ci} style={{
+                          width: 26, height: 26, flexShrink: 0,
+                          border: '1.5px solid var(--border)',
+                          borderRadius: 4,
+                          opacity: 0.3,
+                        }} />
+                      ))
+                  }
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
