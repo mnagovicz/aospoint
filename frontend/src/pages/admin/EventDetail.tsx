@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Users, Trophy, Plus, Download, CheckCircle, XCircle, Pencil, Trash2 } from 'lucide-react';
+import { MapPin, Users, Trophy, Plus, Download, Pencil, Trash2 } from 'lucide-react';
 import {
   type Event, type Checkpoint, type Competitor,
   listCheckpoints, createCheckpoint, updateCheckpoint, deleteCheckpoint,
@@ -1016,78 +1016,37 @@ export default function EventDetail({ event, onBack }: Props) {
                               </div>
                             )}
                           </div>
-                          <div
-                            className="tabular-nums"
-                            style={{ textAlign: 'right', fontWeight: 700, fontSize: 20 }}
-                          >
-                            <span style={{ color: 'var(--success)' }}>{r.recordedCount}</span>
-                            <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>/{r.totalCheckpoints}</span>
+                          <div className="tabular-nums" style={{ textAlign: 'right', fontWeight: 700, fontSize: 20, color: 'var(--success)' }}>
+                            {r.recordedCount}
                           </div>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                          {/* Flatten all passages across checkpoints, sort chronologically */}
-                          {r.checkpointDetails
-                            .flatMap((cd: any) =>
-                              (cd.passages && cd.passages.length > 0
-                                ? cd.passages
-                                : [null]
-                              ).map((p: any) => ({ checkpoint: cd.checkpoint, passage: p }))
-                            )
-                            .sort((a: any, b: any) => {
-                              if (!a.passage) return 1;
-                              if (!b.passage) return -1;
-                              return new Date(a.passage.timestamp).getTime() - new Date(b.passage.timestamp).getTime();
-                            })
-                            .map((entry: any, i: number) => {
-                              const { checkpoint, passage } = entry;
+                          {r.passages
+                            .filter((p: any) => p.action === 'recorded')
+                            .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+                            .map((p: any, i: number) => {
+                              const cp = (results.checkpoints || []).find((c: any) => c.id === p.checkpointId);
+                              const code = cp?.code || cp?.name || '?';
                               return (
-                                <div
-                                  key={`${checkpoint.id}-${i}`}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 10,
-                                    padding: '8px 0',
-                                    borderTop: '1px solid var(--border)',
-                                    fontSize: 13,
-                                  }}
-                                >
-                                  {passage?.action === 'recorded' ? (
-                                    <CheckCircle size={15} color="var(--success)" />
-                                  ) : passage ? (
-                                    <XCircle size={15} color="var(--danger)" />
-                                  ) : (
-                                    <div
-                                      style={{
-                                        width: 15,
-                                        height: 15,
-                                        borderRadius: 999,
-                                        border: '1.5px solid var(--text-muted)',
-                                        flexShrink: 0,
-                                      }}
-                                    />
-                                  )}
-                                  <span style={{ color: 'var(--text-secondary)', flex: 1 }}>
-                                    {checkpoint.name}
-                                    {passage && (
-                                      <span style={{ color: 'var(--text-muted)', marginLeft: 4 }}>
-                                        — Průjezd {passage.passageNumber ?? 1}
-                                      </span>
-                                    )}
+                                <div key={`${p.id || i}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: '1px solid var(--border)' }}>
+                                  <div style={{ display: 'flex', gap: 3 }}>
+                                    {code.split('').map((ch: string, ci: number) => (
+                                      <div key={ci} style={{ width: 28, height: 28, border: `1.5px solid ${cp?.type === 'PK' ? '#a78bfa' : 'var(--accent-bright)'}`, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontWeight: 800, fontSize: 14, color: 'white' }}>{ch}</div>
+                                    ))}
+                                  </div>
+                                  <span style={{ fontSize: 12, color: 'var(--text-muted)', flex: 1 }}>{cp?.name}</span>
+                                  {cp?.type === 'PK' && <span style={{ fontSize: 9, color: '#a78bfa', fontWeight: 700 }}>PK</span>}
+                                  <span className="tabular-nums" style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}>
+                                    {new Date(p.timestamp).toLocaleTimeString('cs-CZ')}
                                   </span>
-                                  {passage?.action === 'recorded' && (
-                                    <span
-                                      className="tabular-nums"
-                                      style={{ color: 'var(--text-muted)', fontSize: 12 }}
-                                    >
-                                      {new Date(passage.timestamp).toLocaleTimeString('cs-CZ')}
-                                    </span>
-                                  )}
                                 </div>
                               );
                             })
                           }
+                          {r.recordedCount === 0 && (
+                            <div style={{ padding: '10px 0', color: 'var(--text-muted)', fontSize: 13, borderTop: '1px solid var(--border)' }}>Žádné průjezdy</div>
+                          )}
                         </div>
                       </div>
                     );
