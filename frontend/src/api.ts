@@ -9,9 +9,19 @@ export interface Event {
   createdAt: string;
 }
 
+export interface Stage {
+  id: string;
+  eventId: string;
+  name: string;
+  order: number;
+  status: 'draft' | 'active' | 'finished';
+  createdAt: string;
+}
+
 export interface Checkpoint {
   id: string;
   eventId: string;
+  stageId: string;
   name: string;
   code: string;
   type: 'SPK' | 'PK';
@@ -27,10 +37,10 @@ export interface Competitor {
   eventId: string;
   driver: string;
   coDriver: string;
-  name: string; // "driver / coDriver" — for backwards compat
+  name: string;
   number: string | number;
   vehicle?: string;
-  accessCode?: string;
+  stageCodes?: Record<string, string>;
   createdAt: string;
 }
 
@@ -38,6 +48,7 @@ export interface Passage {
   id: string;
   competitorId: string;
   checkpointId: string;
+  stageId: string;
   eventId: string;
   action: 'recorded' | 'ignored';
   timestamp: string;
@@ -53,7 +64,7 @@ const jsonHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
-// Events
+// ── Events ────────────────────────────────────────────────
 export const createEvent = (name: string, date: string) =>
   fetch(`${API_URL}/events`, {
     method: 'POST',
@@ -75,12 +86,43 @@ export const deleteEvent = (id: string) =>
     headers: adminHeaders(),
   }).then((r) => r.json());
 
-// Checkpoints
+// ── Stages ────────────────────────────────────────────────
+export const listStages = (eventId: string): Promise<Stage[]> =>
+  fetch(`${API_URL}/events/${eventId}/stages`, { headers: adminHeaders() }).then((r) => r.json());
+
+export const listStagesPublic = (eventId: string): Promise<Stage[]> =>
+  fetch(`${API_URL}/events/${eventId}/stages`, { headers: jsonHeaders() }).then((r) => r.json());
+
+export const createStage = (eventId: string, name: string, order: number): Promise<Stage> =>
+  fetch(`${API_URL}/events/${eventId}/stages`, {
+    method: 'POST',
+    headers: adminHeaders(),
+    body: JSON.stringify({ name, order }),
+  }).then((r) => r.json());
+
+export const updateStage = (eventId: string, stageId: string, data: Partial<Pick<Stage, 'name' | 'order' | 'status'>>) =>
+  fetch(`${API_URL}/events/${eventId}/stages/${stageId}`, {
+    method: 'PUT',
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  }).then((r) => r.json());
+
+export const deleteStage = (eventId: string, stageId: string) =>
+  fetch(`${API_URL}/events/${eventId}/stages/${stageId}`, {
+    method: 'DELETE',
+    headers: adminHeaders(),
+  }).then((r) => r.json());
+
+// ── Checkpoints (per stage) ───────────────────────────────
+export const listCheckpoints = (eventId: string, stageId: string): Promise<Checkpoint[]> =>
+  fetch(`${API_URL}/events/${eventId}/stages/${stageId}/checkpoints`, { headers: jsonHeaders() }).then((r) => r.json());
+
 export const createCheckpoint = (
   eventId: string,
+  stageId: string,
   data: { name: string; code: string; type: string; lat: number; lng: number; radius: number; order: number }
 ) =>
-  fetch(`${API_URL}/events/${eventId}/checkpoints`, {
+  fetch(`${API_URL}/events/${eventId}/stages/${stageId}/checkpoints`, {
     method: 'POST',
     headers: adminHeaders(),
     body: JSON.stringify(data),
@@ -88,25 +130,28 @@ export const createCheckpoint = (
 
 export const updateCheckpoint = (
   eventId: string,
+  stageId: string,
   checkpointId: string,
   data: { name?: string; code?: string; lat?: number; lng?: number; radius?: number }
 ) =>
-  fetch(`${API_URL}/events/${eventId}/checkpoints/${checkpointId}`, {
+  fetch(`${API_URL}/events/${eventId}/stages/${stageId}/checkpoints/${checkpointId}`, {
     method: 'PUT',
     headers: adminHeaders(),
     body: JSON.stringify(data),
   }).then((r) => r.json());
 
-export const deleteCheckpoint = (eventId: string, checkpointId: string) =>
-  fetch(`${API_URL}/events/${eventId}/checkpoints/${checkpointId}`, {
+export const deleteCheckpoint = (eventId: string, stageId: string, checkpointId: string) =>
+  fetch(`${API_URL}/events/${eventId}/stages/${stageId}/checkpoints/${checkpointId}`, {
     method: 'DELETE',
     headers: adminHeaders(),
   }).then((r) => r.json());
 
-export const listCheckpoints = (eventId: string): Promise<Checkpoint[]> =>
-  fetch(`${API_URL}/events/${eventId}/checkpoints`, { headers: jsonHeaders() }).then((r) => r.json());
+// ── Competitors ───────────────────────────────────────────
+export const listCompetitors = (eventId: string, isAdmin = false): Promise<Competitor[]> =>
+  fetch(`${API_URL}/events/${eventId}/competitors`, {
+    headers: isAdmin ? adminHeaders() : jsonHeaders(),
+  }).then((r) => r.json());
 
-// Competitors
 export const createCompetitor = (
   eventId: string,
   data: { driver: string; coDriver: string; number: string; vehicle?: string }
@@ -134,15 +179,11 @@ export const deleteCompetitor = (eventId: string, competitorId: string) =>
     headers: adminHeaders(),
   }).then((r) => r.json());
 
-export const listCompetitors = (eventId: string, isAdmin = false): Promise<Competitor[]> =>
-  fetch(`${API_URL}/events/${eventId}/competitors`, {
-    headers: isAdmin ? adminHeaders() : jsonHeaders(),
-  }).then((r) => r.json());
-
-// Passages
+// ── Passages ──────────────────────────────────────────────
 export const recordPassage = (
   competitorId: string,
   checkpointId: string,
+  stageId: string,
   action: 'recorded' | 'ignored',
   competitorCode: string,
   timestamp?: string
@@ -150,7 +191,7 @@ export const recordPassage = (
   fetch(`${API_URL}/passages`, {
     method: 'POST',
     headers: { ...jsonHeaders(), 'x-competitor-code': competitorCode },
-    body: JSON.stringify({ competitorId, checkpointId, action, timestamp: timestamp || new Date().toISOString() }),
+    body: JSON.stringify({ competitorId, checkpointId, stageId, action, timestamp: timestamp || new Date().toISOString() }),
   }).then((r) => r.json());
 
 export const deletePassage = (passageId: string, competitorCode: string) =>
@@ -159,5 +200,5 @@ export const deletePassage = (passageId: string, competitorCode: string) =>
     headers: { ...jsonHeaders(), 'x-competitor-code': competitorCode },
   }).then(r => r.json());
 
-export const getResults = (eventId: string) =>
-  fetch(`${API_URL}/events/${eventId}/results`, { headers: adminHeaders() }).then((r) => r.json());
+export const getResults = (eventId: string, stageId: string) =>
+  fetch(`${API_URL}/events/${eventId}/stages/${stageId}/results`, { headers: adminHeaders() }).then((r) => r.json());

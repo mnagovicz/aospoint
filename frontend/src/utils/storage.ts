@@ -6,6 +6,7 @@ const SESSION_KEY = 'aospoint_session';
 
 export interface CompetitorSession {
   eventId: string;
+  stageId: string;
   competitorId: string;
   competitorCode: string;
   competitorName: string;
@@ -29,13 +30,13 @@ export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-export function saveCheckpoints(eventId: string, checkpoints: Checkpoint[]) {
-  localStorage.setItem(`${CHECKPOINTS_KEY}_${eventId}`, JSON.stringify(checkpoints));
+export function saveCheckpoints(eventId: string, stageId: string, checkpoints: Checkpoint[]) {
+  localStorage.setItem(`${CHECKPOINTS_KEY}_${eventId}_${stageId}`, JSON.stringify(checkpoints));
 }
 
-export function loadCheckpoints(eventId: string): Checkpoint[] {
+export function loadCheckpoints(eventId: string, stageId: string): Checkpoint[] {
   try {
-    const s = localStorage.getItem(`${CHECKPOINTS_KEY}_${eventId}`);
+    const s = localStorage.getItem(`${CHECKPOINTS_KEY}_${eventId}_${stageId}`);
     return s ? JSON.parse(s) : [];
   } catch {
     return [];
@@ -45,6 +46,7 @@ export function loadCheckpoints(eventId: string): Checkpoint[] {
 interface PendingPassage {
   competitorId: string;
   checkpointId: string;
+  stageId: string;
   action: 'recorded' | 'ignored';
   competitorCode: string;
   timestamp: string;

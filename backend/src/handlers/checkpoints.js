@@ -1,4 +1,4 @@
-const { PutCommand, QueryCommand, UpdateCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, QueryCommand, UpdateCommand, DeleteCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const { docClient, ok, created, badRequest, unauthorized, serverError, requireAdmin } = require('./utils');
 
@@ -7,7 +7,7 @@ const TABLE = process.env.CHECKPOINTS_TABLE;
 const createCheckpoint = async (event) => {
   try {
     if (!requireAdmin(event)) return unauthorized();
-    const { id: eventId } = event.pathParameters;
+    const { id: eventId, stageId } = event.pathParameters;
     const body = JSON.parse(event.body || '{}');
     if (!body.name) return badRequest('Název kontrolního bodu je povinný');
     if (body.lat === undefined || body.lng === undefined) return badRequest('Souřadnice jsou povinné');
@@ -15,6 +15,7 @@ const createCheckpoint = async (event) => {
     const item = {
       id: uuidv4(),
       eventId,
+      stageId,
       name: body.name,
       code: (body.code || '').toUpperCase(),
       type: body.type === 'PK' ? 'PK' : 'SPK',
@@ -35,12 +36,11 @@ const createCheckpoint = async (event) => {
 
 const listCheckpoints = async (event) => {
   try {
-    const { id: eventId } = event.pathParameters;
-    const result = await docClient.send(new QueryCommand({
+    const { id: eventId, stageId } = event.pathParameters;
+    const result = await docClient.send(new ScanCommand({
       TableName: TABLE,
-      IndexName: 'eventId-index',
-      KeyConditionExpression: 'eventId = :eventId',
-      ExpressionAttributeValues: { ':eventId': eventId },
+      FilterExpression: 'stageId = :stageId',
+      ExpressionAttributeValues: { ':stageId': stageId },
     }));
     const items = (result.Items || []).sort((a, b) => a.order - b.order);
     return ok(items);
@@ -53,10 +53,9 @@ const listCheckpoints = async (event) => {
 const updateCheckpoint = async (event) => {
   try {
     if (!requireAdmin(event)) return unauthorized();
-    const { id: eventId, checkpointId } = event.pathParameters;
+    const { checkpointId } = event.pathParameters;
     const body = JSON.parse(event.body || '{}');
 
-    const updates = {};
     const names = {};
     const values = {};
     let expr = [];

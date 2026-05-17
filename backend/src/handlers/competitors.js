@@ -3,6 +3,10 @@ const { v4: uuidv4 } = require('uuid');
 const { docClient, ok, created, badRequest, unauthorized, serverError, requireAdmin } = require('./utils');
 
 const TABLE = process.env.COMPETITORS_TABLE;
+const STAGES_TABLE = process.env.STAGES_TABLE;
+
+const SAFE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const genCode = () => Array.from({ length: 6 }, () => SAFE_CHARS[Math.floor(Math.random() * SAFE_CHARS.length)]).join('');
 
 const createCompetitor = async (event) => {
   try {
@@ -13,17 +17,25 @@ const createCompetitor = async (event) => {
     if (!body.coDriver) return badRequest('Jméno spolujezdce je povinné');
     if (!body.number) return badRequest('Závodní číslo je povinné');
 
-    const SAFE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // bez 0,O,I,1,L
-    const accessCode = Array.from({ length: 6 }, () => SAFE_CHARS[Math.floor(Math.random() * SAFE_CHARS.length)]).join('');
+    // Načíst existující etapy a generovat kód pro každou
+    const stagesResult = await docClient.send(new QueryCommand({
+      TableName: STAGES_TABLE,
+      IndexName: 'eventId-index',
+      KeyConditionExpression: 'eventId = :eventId',
+      ExpressionAttributeValues: { ':eventId': eventId },
+    }));
+    const stageCodes = {};
+    (stagesResult.Items || []).forEach(s => { stageCodes[s.id] = genCode(); });
+
     const item = {
       id: uuidv4(),
       eventId,
       driver: body.driver,
       coDriver: body.coDriver,
       name: `${body.driver} / ${body.coDriver}`,
-      number: body.number,
+      number: String(body.number),
       vehicle: body.vehicle || '',
-      accessCode,
+      stageCodes,
       createdAt: new Date().toISOString(),
     };
 
@@ -49,11 +61,11 @@ const listCompetitors = async (event) => {
 
     let items = result.Items || [];
     if (!isAdmin) {
-      // Hide access codes from non-admins
-      items = items.map(({ accessCode: _ac, ...rest }) => rest);
+      // Závodník vidí jen svůj stageCode při přihlášení — skrýt stageCodes
+      items = items.map(({ stageCodes: _sc, ...rest }) => rest);
     }
 
-    return ok(items.sort((a, b) => String(a.number).localeCompare(String(b.number))));
+    return ok(items.sort((a, b) => String(a.number).localeCompare(String(b.number), undefined, { numeric: true })));
   } catch (err) {
     console.error(err);
     return serverError(err.message);
@@ -63,7 +75,7 @@ const listCompetitors = async (event) => {
 const updateCompetitor = async (event) => {
   try {
     if (!requireAdmin(event)) return unauthorized();
-    const { id: eventId, competitorId } = event.pathParameters;
+    const { competitorId } = event.pathParameters;
     const body = JSON.parse(event.body || '{}');
 
     const updates = [];
@@ -76,15 +88,10 @@ const updateCompetitor = async (event) => {
 
     if (updates.length === 0) return badRequest('Žádná pole k aktualizaci');
 
-    // Rebuild name if driver or coDriver changed
-    const driver = body.driver;
-    const coDriver = body.coDriver;
-    if (driver !== undefined || coDriver !== undefined) {
+    if (body.driver !== undefined || body.coDriver !== undefined) {
       updates.push('#name = :name');
       names['#name'] = 'name';
-      // We need current values to compute name — use a conditional expression or just compute from provided
-      // If only one is provided, we'll set name from what we have
-      values[':name'] = `${driver || ''} / ${coDriver || ''}`;
+      values[':name'] = `${body.driver || ''} / ${body.coDriver || ''}`;
     }
 
     const params = {

@@ -12,27 +12,31 @@ const recordPassage = async (event) => {
     const body = JSON.parse(event.body || '{}');
     if (!body.competitorId) return badRequest('competitorId je povinný');
     if (!body.checkpointId) return badRequest('checkpointId je povinný');
+    if (!body.stageId) return badRequest('stageId je povinný');
     if (!body.action || !['recorded', 'ignored'].includes(body.action)) {
       return badRequest('action musí být "recorded" nebo "ignored"');
     }
 
-    // Verify competitor exists and code matches (if provided)
+    // Ověřit závodníka a kód
     const compResult = await docClient.send(new GetCommand({
       TableName: COMPETITORS_TABLE,
       Key: { id: body.competitorId },
     }));
     if (!compResult.Item) return notFound('Závodník nenalezen');
-    if (competitorCode && compResult.Item.accessCode !== competitorCode) {
-      return unauthorized('Neplatný kód závodníka');
+
+    // Ověřit kód pro danou etapu
+    const expectedCode = compResult.Item.stageCodes?.[body.stageId];
+    if (competitorCode && expectedCode && expectedCode !== competitorCode) {
+      return unauthorized('Neplatný kód závodníka pro tuto etapu');
     }
 
-    // Count existing passages for this competitor+checkpoint to determine passageNumber
     const existingResult = await docClient.send(new ScanCommand({
       TableName: PASSAGES_TABLE,
-      FilterExpression: 'competitorId = :cid AND checkpointId = :cpid',
+      FilterExpression: 'competitorId = :cid AND checkpointId = :cpid AND stageId = :sid',
       ExpressionAttributeValues: {
         ':cid': body.competitorId,
         ':cpid': body.checkpointId,
+        ':sid': body.stageId,
       },
       Select: 'COUNT',
     }));
@@ -42,6 +46,7 @@ const recordPassage = async (event) => {
       id: uuidv4(),
       competitorId: body.competitorId,
       checkpointId: body.checkpointId,
+      stageId: body.stageId,
       eventId: compResult.Item.eventId,
       action: body.action,
       timestamp: body.timestamp || new Date().toISOString(),
@@ -74,14 +79,13 @@ const listPassages = async (event) => {
 
 const getResults = async (event) => {
   try {
-    const { id: eventId } = event.pathParameters;
+    const { id: eventId, stageId } = event.pathParameters;
 
     const [cpResult, compResult, passResult] = await Promise.all([
-      docClient.send(new QueryCommand({
+      docClient.send(new ScanCommand({
         TableName: CHECKPOINTS_TABLE,
-        IndexName: 'eventId-index',
-        KeyConditionExpression: 'eventId = :eid',
-        ExpressionAttributeValues: { ':eid': eventId },
+        FilterExpression: 'stageId = :sid',
+        ExpressionAttributeValues: { ':sid': stageId },
       })),
       docClient.send(new QueryCommand({
         TableName: COMPETITORS_TABLE,
@@ -91,8 +95,8 @@ const getResults = async (event) => {
       })),
       docClient.send(new ScanCommand({
         TableName: PASSAGES_TABLE,
-        FilterExpression: 'eventId = :eid',
-        ExpressionAttributeValues: { ':eid': eventId },
+        FilterExpression: 'stageId = :sid',
+        ExpressionAttributeValues: { ':sid': stageId },
       })),
     ]);
 
@@ -100,30 +104,12 @@ const getResults = async (event) => {
     const competitors = compResult.Items || [];
     const passages = passResult.Items || [];
 
-    // Build results per competitor
     const results = competitors.map(comp => {
       const compPassages = passages
         .filter(p => p.competitorId === comp.id)
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
       const recorded = compPassages.filter(p => p.action === 'recorded');
-
-      // Group all passages by checkpointId
-      const checkpointPassagesMap = {};
-      compPassages.forEach(p => {
-        if (!checkpointPassagesMap[p.checkpointId]) {
-          checkpointPassagesMap[p.checkpointId] = [];
-        }
-        checkpointPassagesMap[p.checkpointId].push({
-          passageNumber: p.passageNumber || 1,
-          timestamp: p.timestamp,
-          action: p.action,
-        });
-      });
-      // Sort each checkpoint's passages by timestamp
-      Object.values(checkpointPassagesMap).forEach(arr =>
-        arr.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-      );
 
       return {
         competitor: {
@@ -135,20 +121,15 @@ const getResults = async (event) => {
           vehicle: comp.vehicle,
         },
         totalCheckpoints: checkpoints.length,
-        recordedCount: recorded.length, // total recorded passages, can exceed CP count
+        recordedCount: recorded.length,
         passages: compPassages,
-        checkpointDetails: checkpoints.map(cp => ({
-          checkpoint: cp,
-          passages: checkpointPassagesMap[cp.id] || [],
-        })),
       };
     }).sort((a, b) => {
-      // Sort by recorded count desc, then by competitor number
       if (b.recordedCount !== a.recordedCount) return b.recordedCount - a.recordedCount;
-      return String(a.competitor.number).localeCompare(String(b.competitor.number));
+      return String(a.competitor.number).localeCompare(String(b.competitor.number), undefined, { numeric: true });
     });
 
-    return ok({ eventId, checkpoints, results });
+    return ok({ eventId, stageId, checkpoints, results });
   } catch (err) {
     console.error(err);
     return serverError(err.message);
@@ -160,31 +141,29 @@ const deletePassage = async (event) => {
     const competitorCode = getCompetitorCode(event);
     const { passageId } = event.pathParameters;
 
-    // Načti průjezd
     const passageResult = await docClient.send(new GetCommand({ TableName: PASSAGES_TABLE, Key: { id: passageId } }));
     if (!passageResult.Item) return notFound('Průjezd nenalezen');
     const passage = passageResult.Item;
 
-    // Ověř závodníka
     const compResult = await docClient.send(new GetCommand({ TableName: COMPETITORS_TABLE, Key: { id: passage.competitorId } }));
     if (!compResult.Item) return notFound('Závodník nenalezen');
-    if (competitorCode && compResult.Item.accessCode !== competitorCode) return unauthorized('Neplatný kód závodníka');
 
-    // Ověř typ checkpointu — PK nelze smazat
+    const expectedCode = compResult.Item.stageCodes?.[passage.stageId];
+    if (competitorCode && expectedCode && expectedCode !== competitorCode) return unauthorized('Neplatný kód závodníka');
+
     const cpResult = await docClient.send(new GetCommand({ TableName: CHECKPOINTS_TABLE, Key: { id: passage.checkpointId } }));
     if (cpResult.Item?.type === 'PK') return badRequest('Průjezdní kontrolu (PK) nelze smazat');
 
-    // Ověř zamknutí — načti všechny průjezdy tohoto závodníka seřazené podle času
+    // Zkontrolovat zamknutí — za tímto průjezdem nesmí být PK
     const allPassages = await docClient.send(new ScanCommand({
       TableName: PASSAGES_TABLE,
-      FilterExpression: 'competitorId = :cid AND #action = :rec',
+      FilterExpression: 'competitorId = :cid AND stageId = :sid AND #action = :rec',
       ExpressionAttributeNames: { '#action': 'action' },
-      ExpressionAttributeValues: { ':cid': passage.competitorId, ':rec': 'recorded' },
+      ExpressionAttributeValues: { ':cid': passage.competitorId, ':sid': passage.stageId, ':rec': 'recorded' },
     }));
     const sorted = (allPassages.Items || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const passageIndex = sorted.findIndex(p => p.id === passageId);
 
-    // Zkontroluj jestli za tímto průjezdem existuje PK
     for (let i = passageIndex + 1; i < sorted.length; i++) {
       const cp = await docClient.send(new GetCommand({ TableName: CHECKPOINTS_TABLE, Key: { id: sorted[i].checkpointId } }));
       if (cp.Item?.type === 'PK') return badRequest('SPK před zapsanou PK nelze smazat');

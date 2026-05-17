@@ -10,6 +10,7 @@ Globals:
     Environment:
       Variables:
         EVENTS_TABLE: aospoint-events
+        STAGES_TABLE: aospoint-stages
         CHECKPOINTS_TABLE: aospoint-checkpoints
         COMPETITORS_TABLE: aospoint-competitors
         PASSAGES_TABLE: aospoint-passages
@@ -30,6 +31,28 @@ Resources:
         AllowMethods: "'*'"
         AllowHeaders: "'*'"
         AllowOrigin: "'*'"
+
+  # DynamoDB — Stages table (ostatní tabulky existují mimo SAM)
+  StagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: aospoint-stages
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: eventId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: eventId-index
+          KeySchema:
+            - AttributeName: eventId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
 
   # Shared IAM Policy for DynamoDB access
   LambdaExecutionRole:
@@ -61,7 +84,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:eu-west-1:${AWS::AccountId}:table/aospoint-*"
                   - !Sub "arn:aws:dynamodb:eu-west-1:${AWS::AccountId}:table/aospoint-*/index/*"
 
-  # Lambda Functions
+  # ── EVENTS ──────────────────────────────────────────────
   CreateEventFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -118,6 +141,64 @@ Resources:
             Path: /events/{id}
             Method: DELETE
 
+  # ── STAGES ──────────────────────────────────────────────
+  CreateStageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/stages.createStage
+      CodeUri: .
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AosPointApi
+            Path: /events/{id}/stages
+            Method: POST
+
+  ListStagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/stages.listStages
+      CodeUri: .
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AosPointApi
+            Path: /events/{id}/stages
+            Method: GET
+
+  UpdateStageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/stages.updateStage
+      CodeUri: .
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AosPointApi
+            Path: /events/{id}/stages/{stageId}
+            Method: PUT
+
+  DeleteStageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/stages.deleteStage
+      CodeUri: .
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AosPointApi
+            Path: /events/{id}/stages/{stageId}
+            Method: DELETE
+
+  # ── CHECKPOINTS (per stage) ──────────────────────────────
   CreateCheckpointFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -129,7 +210,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref AosPointApi
-            Path: /events/{id}/checkpoints
+            Path: /events/{id}/stages/{stageId}/checkpoints
             Method: POST
 
   ListCheckpointsFunction:
@@ -143,7 +224,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref AosPointApi
-            Path: /events/{id}/checkpoints
+            Path: /events/{id}/stages/{stageId}/checkpoints
             Method: GET
 
   UpdateCheckpointFunction:
@@ -157,7 +238,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref AosPointApi
-            Path: /events/{id}/checkpoints/{checkpointId}
+            Path: /events/{id}/stages/{stageId}/checkpoints/{checkpointId}
             Method: PUT
 
   DeleteCheckpointFunction:
@@ -171,9 +252,10 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref AosPointApi
-            Path: /events/{id}/checkpoints/{checkpointId}
+            Path: /events/{id}/stages/{stageId}/checkpoints/{checkpointId}
             Method: DELETE
 
+  # ── COMPETITORS ──────────────────────────────────────────
   CreateCompetitorFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -230,6 +312,7 @@ Resources:
             Path: /events/{id}/competitors/{competitorId}
             Method: DELETE
 
+  # ── PASSAGES ─────────────────────────────────────────────
   RecordPassageFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -269,7 +352,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref AosPointApi
-            Path: /events/{id}/results
+            Path: /events/{id}/stages/{stageId}/results
             Method: GET
 
   DeletePassageFunction:

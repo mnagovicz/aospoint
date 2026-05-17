@@ -42,6 +42,7 @@ function MapFollow({ lat, lng }: { lat: number; lng: number }) {
 interface Props {
   session: {
     eventId: string;
+    stageId: string;
     competitorId: string;
     competitorCode: string;
     competitorName: string;
@@ -75,7 +76,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
     if (pending.length > 0) {
       setSyncing(true);
       Promise.all(
-        pending.map(p => recordPassage(p.competitorId, p.checkpointId, p.action, p.competitorCode, p.timestamp))
+        pending.map(p => recordPassage(p.competitorId, p.checkpointId, p.stageId || session.stageId, p.action, p.competitorCode, p.timestamp))
       ).then(() => {
         clearPendingPassages();
         setSyncing(false);
@@ -124,13 +125,14 @@ export default function RacingScreen({ session, checkpoints }: Props) {
     setCooldowns(prev => ({ ...prev, [cp.id]: Date.now() }));
     const timestamp = new Date().toISOString();
     try {
-      const result = await recordPassage(session.competitorId, cp.id, action, session.competitorCode, timestamp);
+      const result = await recordPassage(session.competitorId, cp.id, session.stageId, action, session.competitorCode, timestamp);
       setPassages(prev => [...prev, { id: result.id, checkpointId: cp.id, action, timestamp }]);
     } catch {
       setPassages(prev => [...prev, { checkpointId: cp.id, action, timestamp }]);
       savePendingPassage({
         competitorId: session.competitorId,
         checkpointId: cp.id,
+        stageId: session.stageId,
         action,
         competitorCode: session.competitorCode,
         timestamp,
