@@ -191,10 +191,11 @@ export default function RacingScreen({ session, checkpoints }: Props) {
       </div>
 
       {/* Map */}
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
       <MapContainer
         center={defaultCenter}
         zoom={14}
-        style={{ flex: 1, minHeight: 0, width: '100%' }}
+        style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
         <TileLayer
@@ -226,11 +227,8 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         )}
       </MapContainer>
 
-      {/* Map type toggle */}
-      <div
-        className="absolute z-50"
-        style={{ bottom: 24, right: 16 }}
-      >
+      {/* Map type toggle — inside relative wrapper, above map */}
+      <div style={{ position: 'absolute', bottom: 24, right: 16, zIndex: 1000 }}>
         <button
           onClick={() => setMapType(prev => prev === 'basic' ? 'aerial' : 'basic')}
           style={{
@@ -251,6 +249,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
           {mapType === 'basic' ? <><Satellite size={16} /> Letecká</> : <><Map size={16} /> Mapa</>}
         </button>
       </div>
+      </div> {/* end map wrapper */}
 
       {/* Syncing indicator */}
       {syncing && (
