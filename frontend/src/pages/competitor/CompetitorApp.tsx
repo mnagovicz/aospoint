@@ -148,7 +148,7 @@ export default function CompetitorApp() {
                   onChange={e => setEventCode(e.target.value.toUpperCase())}
                   placeholder="např. ABC123"
                   className="input-field"
-                  style={{ fontFamily: 'monospace', letterSpacing: '0.1em', fontWeight: 600 }}
+                  style={{ fontFamily: 'monospace', letterSpacing: '0.15em', fontWeight: 700, fontSize: 20, fontVariantNumeric: 'slashed-zero' }}
                 />
               </div>
 

@@ -10,7 +10,8 @@ const createEvent = async (event) => {
     const body = JSON.parse(event.body || '{}');
     if (!body.name) return badRequest('Název eventu je povinný');
 
-    const accessCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const SAFE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // bez 0,O,I,1,L
+    const accessCode = Array.from({ length: 6 }, () => SAFE_CHARS[Math.floor(Math.random() * SAFE_CHARS.length)]).join('');
     const item = {
       id: uuidv4(),
       name: body.name,

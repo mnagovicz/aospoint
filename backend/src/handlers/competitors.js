@@ -13,7 +13,8 @@ const createCompetitor = async (event) => {
     if (!body.coDriver) return badRequest('Jméno spolujezdce je povinné');
     if (!body.number) return badRequest('Závodní číslo je povinné');
 
-    const accessCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const SAFE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // bez 0,O,I,1,L
+    const accessCode = Array.from({ length: 6 }, () => SAFE_CHARS[Math.floor(Math.random() * SAFE_CHARS.length)]).join('');
     const item = {
       id: uuidv4(),
       eventId,
