@@ -142,7 +142,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
       <div style={{ flexShrink: 0, display: 'flex', borderBottom: '1px solid var(--border)', background: 'rgba(10,10,15,0.96)', zIndex: 50, maxHeight: '35vh' }}>
 
         {/* Stavové info — 1/3 šířky */}
-        <div style={{ flex: 1, borderRight: '1px solid var(--border)', padding: '12px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+        <div style={{ flex: 1, borderRight: '1px solid var(--border)', padding: 'calc(env(safe-area-inset-top) + 12px) 14px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: 14, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {session.competitorName}
@@ -167,7 +167,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         </div>
 
         {/* Jízdní výkaz — 2/3 šířky */}
-        <div style={{ flex: 2, overflowY: 'auto', padding: '8px 10px', minWidth: 0 }}>
+        <div style={{ flex: 2, overflowY: 'auto', padding: 'calc(env(safe-area-inset-top) + 8px) 10px 8px', minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Jízdní výkaz</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {[0, 1, 2].map(rowIdx => {
