@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Flag, LogOut } from 'lucide-react';
 import { listEvents, listCheckpoints, listCompetitors, type Checkpoint } from '../../api';
 import { saveSession, loadSession, saveCheckpoints, loadCheckpoints } from '../../utils/storage';
 import SimpleRacingScreen from './SimpleRacingScreen';
@@ -80,49 +81,131 @@ export default function SimpleCompetitorApp() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: '#1a1a2e' }}>
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">📍</div>
-          <h1 className="text-3xl font-bold" style={{ color: '#4ecca3' }}>AosPoint</h1>
-          <p className="text-gray-400 mt-2">Jednoduchý pohled</p>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Kód soutěže</label>
-            <input
-              type="text"
-              value={eventCode}
-              onChange={e => setEventCode(e.target.value.toUpperCase())}
-              placeholder="např. ABC123"
-              className="w-full px-4 py-4 rounded-xl text-white text-lg"
-              style={{ background: '#16213e', border: '2px solid #0f3460', fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.15em', fontSize: 20, fontVariantNumeric: 'slashed-zero' }}
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Závodní číslo</label>
-            <input
-              type="text"
-              value={raceNumber}
-              onChange={e => setRaceNumber(e.target.value)}
-              placeholder="např. 2"
-              className="w-full px-4 py-4 rounded-xl text-white text-lg"
-              style={{ background: '#16213e', border: '2px solid #0f3460' }}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            />
-          </div>
-          {error && (
-            <div className="px-4 py-3 rounded-xl text-red-400 text-sm" style={{ background: '#2a1a1a' }}>
-              {error}
-            </div>
-          )}
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full py-4 rounded-xl text-white font-bold text-lg"
-            style={{ background: loading ? '#0f3460' : '#4ecca3', color: loading ? '#fff' : '#1a1a2e', minHeight: '64px' }}
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-5"
+      style={{ background: 'var(--bg-primary)' }}
+    >
+      <div style={{ width: '100%', maxWidth: '420px' }}>
+        {/* Logo */}
+        <div className="text-center" style={{ marginBottom: 40 }}>
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              background: 'var(--accent-glow)',
+              border: '1px solid rgba(124,58,237,0.3)',
+              borderRadius: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+            }}
           >
-            {loading ? 'Načítám...' : 'Přihlásit se'}
+            <Flag size={32} color="#8b5cf6" />
+          </div>
+          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em' }}>
+            AosPoint
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', marginTop: 6, fontSize: 14 }}>
+            Závodnická aplikace
+          </p>
+        </div>
+
+        {/* Form */}
+        <div className="card" style={{ padding: '28px 24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  marginBottom: 8,
+                }}
+              >
+                Kód soutěže
+              </label>
+              <input
+                type="text"
+                value={eventCode}
+                onChange={e => setEventCode(e.target.value.toUpperCase())}
+                placeholder="např. ABC123"
+                className="input-field"
+                style={{ fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.15em', fontSize: 18, fontVariantNumeric: 'slashed-zero' }}
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  marginBottom: 8,
+                }}
+              >
+                Závodní číslo
+              </label>
+              <input
+                type="text"
+                value={raceNumber}
+                onChange={e => setRaceNumber(e.target.value)}
+                placeholder="např. 2"
+                className="input-field"
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              />
+            </div>
+
+            {error && (
+              <div
+                style={{
+                  background: 'var(--danger-glow)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: 10,
+                  padding: '10px 14px',
+                  color: 'var(--danger)',
+                  fontSize: 14,
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            <button
+              onClick={handleLogin}
+              disabled={loading}
+              className="btn-primary"
+              style={{ minHeight: 52 }}
+            >
+              {loading ? 'NAČÍTÁM...' : 'PŘIHLÁSIT SE'}
+            </button>
+          </div>
+        </div>
+
+        {/* Switch to admin */}
+        <div className="text-center" style={{ marginTop: 20 }}>
+          <button
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: 13,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+            onClick={() => location.href = '/admin'}
+            onMouseOver={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+            onMouseOut={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+          >
+            <LogOut size={14} />
+            Pořadatel
           </button>
         </div>
       </div>
