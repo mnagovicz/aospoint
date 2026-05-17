@@ -156,7 +156,6 @@ export default function RacingScreen({ session, checkpoints }: Props) {
     : [49.2, 17.7];
 
   const totalPassages = passages.filter(p => p.action === 'recorded').length;
-  const progressPct = checkpoints.length > 0 ? Math.min((totalPassages / checkpoints.length) * 100, 100) : 0;
 
   const handleFinish = () => {
     if (window.confirm('Chcete předat výkaz?')) {
@@ -230,9 +229,6 @@ export default function RacingScreen({ session, checkpoints }: Props) {
               <div className="tabular-nums" style={{ fontSize: 22, fontWeight: 800, lineHeight: 1, color: 'var(--accent-bright)' }}>{totalPassages}</div>
               <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>průjezdů</div>
             </div>
-          </div>
-          <div className="progress-bar" style={{ marginTop: 8 }}>
-            <div className="progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
         </div>
 

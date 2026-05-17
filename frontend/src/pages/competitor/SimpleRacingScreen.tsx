@@ -81,7 +81,6 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
 
   const recorded = passages.filter(p => p.action === 'recorded');
   const totalPassages = recorded.length;
-  const progressPct = checkpoints.length > 0 ? Math.min((totalPassages / checkpoints.length) * 100, 100) : 0;
 
   // Poslední zaznamenaný checkpoint pro velké písmeno
   const handleFinish = () => {
@@ -150,9 +149,6 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
             <div style={{ fontSize: 22, fontWeight: 800, color: '#4ecca3' }}>{totalPassages}</div>
             <div style={{ fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>průjezdů</div>
           </div>
-        </div>
-        <div style={{ marginTop: 8, height: 4, background: '#1a1a2e', borderRadius: 2, overflow: 'hidden' }}>
-          <div style={{ height: '100%', background: '#4ecca3', borderRadius: 2, width: `${progressPct}%`, transition: 'width 0.4s ease' }} />
         </div>
       </div>
 
