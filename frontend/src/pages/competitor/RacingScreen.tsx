@@ -180,8 +180,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
                 <div key={rowIdx} style={{ display: 'flex', gap: 6 }}>
                   {chars.map((char, ci) => (
                     <div key={ci} style={{
-                      flex: 1,
-                      height: 52,
+                      width: 52, height: 52, flexShrink: 0,
                       border: `1.5px solid ${char ? 'var(--accent-bright)' : 'var(--border)'}`,
                       borderRadius: 6,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',

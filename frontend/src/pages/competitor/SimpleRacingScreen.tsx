@@ -125,8 +125,7 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
               <div key={rowIdx} style={{ display: 'flex', gap: 6 }}>
                 {chars.map((char, ci) => (
                   <div key={ci} style={{
-                    flex: 1,
-                    height: 52,
+                    width: 52, height: 52, flexShrink: 0,
                     border: `1.5px solid ${char ? '#4ecca3' : '#1a1a2e'}`,
                     borderRadius: 6,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
