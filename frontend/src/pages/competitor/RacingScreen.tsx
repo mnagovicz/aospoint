@@ -7,7 +7,7 @@ import { type Checkpoint, recordPassage, deletePassage } from '../../api';
 import { playBeep, vibrate } from '../../utils/audio';
 import { useGPS } from '../../hooks/useGPS';
 import { useGeofence } from '../../hooks/useGeofence';
-import { savePendingPassage, loadPendingPassages, clearPendingPassages } from '../../utils/storage';
+import { savePendingPassage, loadPendingPassages, clearPendingPassages, clearSession } from '../../utils/storage';
 
 // Fix Leaflet default icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -65,6 +65,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   const [syncing, setSyncing] = useState(false);
   const [mapType, setMapType] = useState<'basic' | 'aerial'>('basic');
   const [followPosition, setFollowPosition] = useState(false);
+  const [finished, setFinished] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync pending passages on mount
@@ -156,6 +157,53 @@ export default function RacingScreen({ session, checkpoints }: Props) {
 
   const totalPassages = passages.filter(p => p.action === 'recorded').length;
   const progressPct = checkpoints.length > 0 ? Math.min((totalPassages / checkpoints.length) * 100, 100) : 0;
+
+  const handleFinish = () => {
+    if (window.confirm('Chcete předat výkaz?')) {
+      clearSession();
+      setFinished(true);
+    }
+  };
+
+  if (finished) {
+    const recorded = passages.filter(p => p.action === 'recorded');
+    return (
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', padding: 24 }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🏁</div>
+        <h2 style={{ fontSize: 24, fontWeight: 800, color: 'white', marginBottom: 4 }}>Výkaz předán</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 32 }}>{session.competitorName} #{session.competitorNumber}</p>
+        <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
+          {recorded.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>Bez zaznamenaných průjezdů</p>
+          ) : recorded.map((p, i) => {
+            const cp = checkpoints.find(c => c.id === p.checkpointId);
+            const code = cp?.code || cp?.name || '?';
+            const timeStr = new Date(p.timestamp).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-secondary)', border: `1px solid ${cp?.type === 'PK' ? 'rgba(124,58,237,0.4)' : 'var(--border)'}`, borderRadius: 10, padding: '10px 14px' }}>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {code.split('').map((ch, ci) => (
+                    <div key={ci} style={{ width: 32, height: 32, border: `1.5px solid ${cp?.type === 'PK' ? '#a78bfa' : 'var(--accent-bright)'}`, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontWeight: 800, fontSize: 16, color: 'white' }}>{ch}</div>
+                  ))}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{cp?.name}</div>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{timeStr}</div>
+                {cp?.type === 'PK' && <div style={{ fontSize: 9, color: '#a78bfa', fontWeight: 700 }}>PK</div>}
+              </div>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => { window.location.href = '/'; }}
+          style={{ background: 'var(--accent-bright)', color: '#0a0a0f', fontWeight: 700, fontSize: 15, padding: '14px 32px', borderRadius: 12, border: 'none', cursor: 'pointer' }}
+        >
+          Nová jízda
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
@@ -304,6 +352,16 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         </button>
       </div>
       </div> {/* end map wrapper */}
+
+      {/* Cíl button */}
+      <div style={{ flexShrink: 0, padding: '10px 16px', background: 'rgba(10,10,15,0.96)', borderTop: '1px solid var(--border)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}>
+        <button
+          onClick={handleFinish}
+          style={{ width: '100%', padding: '14px', borderRadius: 12, border: '2px solid #ef4444', background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: 800, fontSize: 16, cursor: 'pointer', letterSpacing: '0.05em' }}
+        >
+          🏁 CÍL
+        </button>
+      </div>
 
       {/* Syncing indicator */}
       {syncing && (
