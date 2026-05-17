@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Navigation, CheckCircle, XCircle, Radio, WifiOff, Satellite, Map } from 'lucide-react';
-import { type Checkpoint, recordPassage } from '../../api';
+import { type Checkpoint, recordPassage, deletePassage } from '../../api';
 import { playBeep, vibrate } from '../../utils/audio';
 import { useGPS } from '../../hooks/useGPS';
 import { useGeofence } from '../../hooks/useGeofence';
@@ -61,7 +61,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   // cooldowns[checkpointId] = timestamp when cooldown started (120s window)
   const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
   const [dialog, setDialog] = useState<CheckpointDialogState | null>(null);
-  const [passages, setPassages] = useState<{ checkpointId: string; action: string; timestamp: string }[]>([]);
+  const [passages, setPassages] = useState<{ id?: string; checkpointId: string; action: string; timestamp: string }[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [mapType, setMapType] = useState<'basic' | 'aerial'>('basic');
   const [followPosition, setFollowPosition] = useState(false);
@@ -113,11 +113,11 @@ export default function RacingScreen({ session, checkpoints }: Props) {
     // Set cooldown — checkpoint re-enables after 120 s
     setCooldowns(prev => ({ ...prev, [cp.id]: Date.now() }));
     const timestamp = new Date().toISOString();
-    setPassages(prev => [...prev, { checkpointId: cp.id, action, timestamp }]);
-
     try {
-      await recordPassage(session.competitorId, cp.id, action, session.competitorCode, timestamp);
+      const result = await recordPassage(session.competitorId, cp.id, action, session.competitorCode, timestamp);
+      setPassages(prev => [...prev, { id: result.id, checkpointId: cp.id, action, timestamp }]);
     } catch {
+      setPassages(prev => [...prev, { checkpointId: cp.id, action, timestamp }]);
       savePendingPassage({
         competitorId: session.competitorId,
         checkpointId: cp.id,
@@ -127,6 +127,28 @@ export default function RacingScreen({ session, checkpoints }: Props) {
       });
     }
   }, [session]);
+
+  const handleDeletePassage = useCallback(async (passageIdx: number) => {
+    const recorded = passages.filter(p => p.action === 'recorded');
+    const p = recorded[passageIdx];
+    if (!p?.id) return;
+    // Zkontroluj zda je za timto prujedem nejaka PK
+    const cp = checkpoints.find(c => c.id === p.checkpointId);
+    if (cp?.type === 'PK') return; // PK nelze smazat
+    // Zkontroluj jestli za nim existuje PK v passagich
+    const afterPassages = recorded.slice(passageIdx + 1);
+    const hasLaterPK = afterPassages.some(ap => {
+      const acp = checkpoints.find(c => c.id === ap.checkpointId);
+      return acp?.type === 'PK';
+    });
+    if (hasLaterPK) { alert('SPK před zapsanou PK nelze smazat.'); return; }
+    try {
+      await deletePassage(p.id, session.competitorCode);
+      setPassages(prev => prev.filter(pp => pp.id !== p.id));
+    } catch {
+      alert('Nepodařilo se smazat průjezd.');
+    }
+  }, [passages, checkpoints, session]);
 
   const defaultCenter: [number, number] = position
     ? [position.lat, position.lng]
@@ -176,18 +198,24 @@ export default function RacingScreen({ session, checkpoints }: Props) {
               const cp = p ? checkpoints.find(c => c.id === p.checkpointId) : null;
               const name = cp?.code || cp?.name || '';
               const chars = name.length > 0 ? name.split('') : Array.from({ length: 6 }).map(() => '');
+              const isPK = cp?.type === 'PK';
+              const hasLaterPK = p ? recorded.slice(rowIdx + 1).some(ap => checkpoints.find(c => c.id === ap.checkpointId)?.type === 'PK') : false;
+              const canDelete = !!p && !isPK && !hasLaterPK;
               return (
-                <div key={rowIdx} style={{ display: 'flex', gap: 6 }}>
+                <div key={rowIdx} style={{ display: 'flex', gap: 6, position: 'relative', cursor: canDelete ? 'pointer' : 'default' }}
+                  onClick={() => canDelete && window.confirm(`Smazat průjezd ${name}?`) && handleDeletePassage(rowIdx)}
+                >
                   {chars.map((char, ci) => (
                     <div key={ci} style={{
                       width: 52, height: 52, flexShrink: 0,
-                      border: `1.5px solid ${char ? 'var(--accent-bright)' : 'var(--border)'}`,
+                      border: `1.5px solid ${char ? (isPK ? '#a78bfa' : hasLaterPK ? '#6b7280' : 'var(--accent-bright)') : 'var(--border)'}`,
                       borderRadius: 6,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontFamily: 'monospace', fontWeight: 800, fontSize: 24, color: 'white',
                       opacity: char ? 1 : 0.3,
                     }}>{char}</div>
                   ))}
+                  {isPK && name && <div style={{ position: 'absolute', right: 2, top: 2, fontSize: 9, color: '#a78bfa', fontWeight: 700 }}>PK</div>}
                 </div>
               );
             })}

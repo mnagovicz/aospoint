@@ -14,6 +14,7 @@ export interface Checkpoint {
   eventId: string;
   name: string;
   code: string;
+  type: 'SPK' | 'PK';
   lat: number;
   lng: number;
   radius: number;
@@ -71,7 +72,7 @@ export const getEvent = (id: string): Promise<Event> =>
 // Checkpoints
 export const createCheckpoint = (
   eventId: string,
-  data: { name: string; code: string; lat: number; lng: number; radius: number; order: number }
+  data: { name: string; code: string; type: string; lat: number; lng: number; radius: number; order: number }
 ) =>
   fetch(`${API_URL}/events/${eventId}/checkpoints`, {
     method: 'POST',
@@ -145,6 +146,12 @@ export const recordPassage = (
     headers: { ...jsonHeaders(), 'x-competitor-code': competitorCode },
     body: JSON.stringify({ competitorId, checkpointId, action, timestamp: timestamp || new Date().toISOString() }),
   }).then((r) => r.json());
+
+export const deletePassage = (passageId: string, competitorCode: string) =>
+  fetch(`${API_URL}/passages/${passageId}`, {
+    method: 'DELETE',
+    headers: { ...jsonHeaders(), 'x-competitor-code': competitorCode },
+  }).then(r => r.json());
 
 export const getResults = (eventId: string) =>
   fetch(`${API_URL}/events/${eventId}/results`, { headers: adminHeaders() }).then((r) => r.json());

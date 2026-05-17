@@ -1,4 +1,4 @@
-const { PutCommand, QueryCommand, GetCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, QueryCommand, GetCommand, ScanCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const { docClient, ok, created, badRequest, unauthorized, notFound, serverError, getCompetitorCode } = require('./utils');
 
@@ -155,4 +155,47 @@ const getResults = async (event) => {
   }
 };
 
-module.exports = { recordPassage, listPassages, getResults };
+const deletePassage = async (event) => {
+  try {
+    const competitorCode = getCompetitorCode(event);
+    const { passageId } = event.pathParameters;
+
+    // Načti průjezd
+    const passageResult = await docClient.send(new GetCommand({ TableName: PASSAGES_TABLE, Key: { id: passageId } }));
+    if (!passageResult.Item) return notFound('Průjezd nenalezen');
+    const passage = passageResult.Item;
+
+    // Ověř závodníka
+    const compResult = await docClient.send(new GetCommand({ TableName: COMPETITORS_TABLE, Key: { id: passage.competitorId } }));
+    if (!compResult.Item) return notFound('Závodník nenalezen');
+    if (competitorCode && compResult.Item.accessCode !== competitorCode) return unauthorized('Neplatný kód závodníka');
+
+    // Ověř typ checkpointu — PK nelze smazat
+    const cpResult = await docClient.send(new GetCommand({ TableName: CHECKPOINTS_TABLE, Key: { id: passage.checkpointId } }));
+    if (cpResult.Item?.type === 'PK') return badRequest('Průjezdní kontrolu (PK) nelze smazat');
+
+    // Ověř zamknutí — načti všechny průjezdy tohoto závodníka seřazené podle času
+    const allPassages = await docClient.send(new ScanCommand({
+      TableName: PASSAGES_TABLE,
+      FilterExpression: 'competitorId = :cid AND #action = :rec',
+      ExpressionAttributeNames: { '#action': 'action' },
+      ExpressionAttributeValues: { ':cid': passage.competitorId, ':rec': 'recorded' },
+    }));
+    const sorted = (allPassages.Items || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const passageIndex = sorted.findIndex(p => p.id === passageId);
+
+    // Zkontroluj jestli za tímto průjezdem existuje PK
+    for (let i = passageIndex + 1; i < sorted.length; i++) {
+      const cp = await docClient.send(new GetCommand({ TableName: CHECKPOINTS_TABLE, Key: { id: sorted[i].checkpointId } }));
+      if (cp.Item?.type === 'PK') return badRequest('SPK před zapsanou PK nelze smazat');
+    }
+
+    await docClient.send(new DeleteCommand({ TableName: PASSAGES_TABLE, Key: { id: passageId } }));
+    return ok({ deleted: true });
+  } catch (err) {
+    console.error(err);
+    return serverError(err.message);
+  }
+};
+
+module.exports = { recordPassage, listPassages, getResults, deletePassage };

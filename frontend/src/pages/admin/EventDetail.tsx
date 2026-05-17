@@ -82,7 +82,7 @@ export default function EventDetail({ event, onBack }: Props) {
   const [selectedCheckpointId, setSelectedCheckpointId] = useState<string | null>(null);
 
   // Checkpoint form (new)
-  const [cpForm, setCpForm] = useState<{ lat: number; lng: number; name: string; code: string; radius: number } | null>(null);
+  const [cpForm, setCpForm] = useState<{ lat: number; lng: number; name: string; code: string; type: 'SPK' | 'PK'; radius: number } | null>(null);
   const [cpSaving, setCpSaving] = useState(false);
 
   // Checkpoint edit
@@ -143,7 +143,7 @@ export default function EventDetail({ event, onBack }: Props) {
   };
 
   const handleMapClick = (lat: number, lng: number) => {
-    setCpForm({ lat, lng, name: '', code: '', radius: 50 });
+    setCpForm({ lat, lng, name: '', code: '', type: 'SPK', radius: 50 });
   };
 
   const handleEditCheckpoint = async () => {
@@ -178,6 +178,7 @@ export default function EventDetail({ event, onBack }: Props) {
       await createCheckpoint(event.id, {
         name: cpForm.name,
         code: cpForm.code,
+        type: cpForm.type,
         lat: cpForm.lat,
         lng: cpForm.lng,
         radius: cpForm.radius,
@@ -399,6 +400,23 @@ export default function EventDetail({ event, onBack }: Props) {
                       style={{ flex: 1 }}
                     />
                   </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {(['SPK', 'PK'] as const).map(t => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setCpForm({ ...cpForm, type: t })}
+                        style={{
+                          flex: 1, padding: '10px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                          background: cpForm.type === t ? (t === 'PK' ? '#7c3aed' : '#0f3460') : 'transparent',
+                          border: `2px solid ${cpForm.type === t ? (t === 'PK' ? '#7c3aed' : 'var(--accent-bright)') : 'var(--border)'}`,
+                          color: cpForm.type === t ? 'white' : 'var(--text-muted)',
+                        }}
+                      >
+                        {t === 'SPK' ? '🟢 SPK' : '🟣 PK'}
+                      </button>
+                    ))}
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <label style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                       Radius (m)
@@ -514,7 +532,16 @@ export default function EventDetail({ event, onBack }: Props) {
                       {i + 1}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{cp.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600, fontSize: 14 }}>{cp.name}</span>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                          background: cp.type === 'PK' ? 'rgba(124,58,237,0.2)' : 'rgba(78,204,163,0.15)',
+                          color: cp.type === 'PK' ? '#a78bfa' : 'var(--accent-bright)',
+                          border: `1px solid ${cp.type === 'PK' ? 'rgba(124,58,237,0.4)' : 'rgba(78,204,163,0.3)'}`,
+                        }}>{cp.type || 'SPK'}</span>
+                        {cp.code && <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-secondary)' }}>[{cp.code}]</span>}
+                      </div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                         {cp.lat.toFixed(5)}, {cp.lng.toFixed(5)} · r={cp.radius}m
                       </div>

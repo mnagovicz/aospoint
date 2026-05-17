@@ -258,6 +258,20 @@ Resources:
             Path: /events/{id}/results
             Method: GET
 
+  DeletePassageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/passages.deletePassage
+      CodeUri: .
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref AosPointApi
+            Path: /passages/{passageId}
+            Method: DELETE
+
 Outputs:
   ApiUrl:
     Description: API Gateway URL

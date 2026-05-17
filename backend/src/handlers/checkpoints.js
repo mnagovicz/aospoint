@@ -17,6 +17,7 @@ const createCheckpoint = async (event) => {
       eventId,
       name: body.name,
       code: (body.code || '').toUpperCase(),
+      type: body.type === 'PK' ? 'PK' : 'SPK',
       lat: parseFloat(body.lat),
       lng: parseFloat(body.lng),
       radius: parseInt(body.radius || 50),
