@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Navigation, CheckCircle, XCircle, Radio, WifiOff, Satellite, Map } from 'lucide-react';
@@ -30,35 +30,6 @@ const playerIcon = new L.DivIcon({
   className: '',
 });
 
-const checkpointDoneIcon = new L.DivIcon({
-  html: `<div style="
-    width: 26px; height: 26px;
-    background: #10b981;
-    border: 3px solid #fff;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px;
-    box-shadow: 0 0 12px rgba(16,185,129,0.5);
-  ">✓</div>`,
-  iconSize: [26, 26],
-  iconAnchor: [13, 13],
-  className: '',
-});
-
-const checkpointIcon = new L.DivIcon({
-  html: `<div style="
-    width: 26px; height: 26px;
-    background: #7c3aed;
-    border: 3px solid #fff;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; color: white; font-weight: 700;
-    box-shadow: 0 0 12px rgba(124,58,237,0.5);
-  ">!</div>`,
-  iconSize: [26, 26],
-  iconAnchor: [13, 13],
-  className: '',
-});
 
 function MapFollow({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
@@ -163,14 +134,6 @@ export default function RacingScreen({ session, checkpoints }: Props) {
 
   const totalPassages = passages.filter(p => p.action === 'recorded').length;
   const progressPct = checkpoints.length > 0 ? Math.min((totalPassages / checkpoints.length) * 100, 100) : 0;
-
-  // Checkpoints currently within their 2-minute cooldown (used for map visuals)
-  const now = Date.now();
-  const inCooldown = new Set(
-    Object.entries(cooldowns)
-      .filter(([, ts]) => now - ts < 120_000)
-      .map(([id]) => id)
-  );
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
