@@ -257,39 +257,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
           attribution='© <a href="https://www.seznam.cz" target="_blank">Seznam.cz a.s.</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
         />
 
-        {/* Checkpoints */}
-        {checkpoints.map(cp => (
-          <div key={cp.id}>
-            <Circle
-              center={[cp.lat, cp.lng]}
-              radius={cp.radius}
-              pathOptions={{
-                color: inCooldown.has(cp.id) ? '#10b981' : '#7c3aed',
-                fillColor: inCooldown.has(cp.id) ? '#10b981' : '#7c3aed',
-                fillOpacity: 0.15,
-                weight: 2,
-              }}
-            />
-            <Marker
-              position={[cp.lat, cp.lng]}
-              icon={inCooldown.has(cp.id) ? checkpointDoneIcon : checkpointIcon}
-            >
-              <Popup>
-                <div>
-                  <strong style={{ color: 'white' }}>{cp.name}</strong>
-                  <br />
-                  <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Radius: {cp.radius}m</span>
-                  {inCooldown.has(cp.id) && (
-                    <>
-                      <br />
-                      <span style={{ color: 'var(--success)', fontSize: 12, fontWeight: 600 }}>✓ Cooldown 2 min</span>
-                    </>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          </div>
-        ))}
+        {/* Checkpoints are intentionally hidden from competitor — geofencing runs in background */}
 
         {/* Player position */}
         {position && (
