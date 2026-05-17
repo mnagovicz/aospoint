@@ -82,7 +82,7 @@ export default function EventDetail({ event, onBack }: Props) {
   const [selectedCheckpointId, setSelectedCheckpointId] = useState<string | null>(null);
 
   // Checkpoint form (new)
-  const [cpForm, setCpForm] = useState<{ lat: number; lng: number; name: string; radius: number } | null>(null);
+  const [cpForm, setCpForm] = useState<{ lat: number; lng: number; name: string; code: string; radius: number } | null>(null);
   const [cpSaving, setCpSaving] = useState(false);
 
   // Checkpoint edit
@@ -143,7 +143,7 @@ export default function EventDetail({ event, onBack }: Props) {
   };
 
   const handleMapClick = (lat: number, lng: number) => {
-    setCpForm({ lat, lng, name: '', radius: 50 });
+    setCpForm({ lat, lng, name: '', code: '', radius: 50 });
   };
 
   const handleEditCheckpoint = async () => {
@@ -177,6 +177,7 @@ export default function EventDetail({ event, onBack }: Props) {
     try {
       await createCheckpoint(event.id, {
         name: cpForm.name,
+        code: cpForm.code,
         lat: cpForm.lat,
         lng: cpForm.lng,
         radius: cpForm.radius,
@@ -378,14 +379,26 @@ export default function EventDetail({ event, onBack }: Props) {
                   Nový checkpoint — {cpForm.lat.toFixed(5)}, {cpForm.lng.toFixed(5)}
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <input
-                    type="text"
-                    value={cpForm.name}
-                    onChange={e => setCpForm({ ...cpForm, name: e.target.value })}
-                    placeholder="Název (např. Rozcestí pod kopcem)"
-                    className="input-field"
-                    autoFocus
-                  />
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <input
+                      type="text"
+                      value={cpForm.code}
+                      onChange={e => setCpForm({ ...cpForm, code: e.target.value.toUpperCase() })}
+                      placeholder="Kód (A, B3...)"
+                      className="input-field"
+                      style={{ flex: '0 0 90px', fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.1em' }}
+                      maxLength={4}
+                      autoFocus
+                    />
+                    <input
+                      type="text"
+                      value={cpForm.name}
+                      onChange={e => setCpForm({ ...cpForm, name: e.target.value })}
+                      placeholder="Název místa (např. Most)"
+                      className="input-field"
+                      style={{ flex: 1 }}
+                    />
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <label style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                       Radius (m)

@@ -13,6 +13,7 @@ export interface Checkpoint {
   id: string;
   eventId: string;
   name: string;
+  code: string;
   lat: number;
   lng: number;
   radius: number;
@@ -70,7 +71,7 @@ export const getEvent = (id: string): Promise<Event> =>
 // Checkpoints
 export const createCheckpoint = (
   eventId: string,
-  data: { name: string; lat: number; lng: number; radius: number; order: number }
+  data: { name: string; code: string; lat: number; lng: number; radius: number; order: number }
 ) =>
   fetch(`${API_URL}/events/${eventId}/checkpoints`, {
     method: 'POST',

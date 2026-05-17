@@ -16,6 +16,7 @@ const createCheckpoint = async (event) => {
       id: uuidv4(),
       eventId,
       name: body.name,
+      code: (body.code || '').toUpperCase(),
       lat: parseFloat(body.lat),
       lng: parseFloat(body.lng),
       radius: parseInt(body.radius || 50),

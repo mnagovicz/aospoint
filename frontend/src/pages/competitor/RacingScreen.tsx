@@ -144,12 +144,12 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         {/* Stavové info — celá šířka */}
         <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '1px solid var(--border)' }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: 'white' }}>
-              {session.competitorName}{' '}
-              <span style={{ color: 'var(--accent-bright)', fontFamily: 'monospace', fontWeight: 600 }}>#{session.competitorNumber}</span>
-            </div>
-            <div style={{ fontSize: 11, color: gpsError ? 'var(--danger)' : position ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3, marginTop: 3 }}>
-              {gpsError ? <><WifiOff size={10} /> GPS chyba</> : position ? <><Navigation size={10} /> ±{Math.round(position.accuracy)}m</> : <><Radio size={10} /> GPS...</>}
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'white' }}>{session.competitorName}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+              <span style={{ color: 'var(--accent-bright)', fontFamily: 'monospace', fontWeight: 700, fontSize: 13 }}>#{session.competitorNumber}</span>
+              <div style={{ fontSize: 11, color: gpsError ? 'var(--danger)' : position ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                {gpsError ? <><WifiOff size={10} /> GPS chyba</> : position ? <><Navigation size={10} /> ±{Math.round(position.accuracy)}m</> : <><Radio size={10} /> GPS...</>}
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -174,7 +174,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
               const recorded = passages.filter(p => p.action === 'recorded');
               const p = recorded[rowIdx];
               const cp = p ? checkpoints.find(c => c.id === p.checkpointId) : null;
-              const name = cp?.name ?? '';
+              const name = cp?.code || cp?.name || '';
               return (
                 <div key={rowIdx} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
                   {name.length > 0
