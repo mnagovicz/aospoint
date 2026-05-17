@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Pencil, Trash2 } from 'lucide-react';
 import {
   type Event, type Stage, type Checkpoint,
   listCheckpoints, createCheckpoint, updateCheckpoint, deleteCheckpoint, updateStage,
@@ -62,6 +61,37 @@ export default function StageDetail({ event, stage: initialStage, onBack, onStag
   const [deleteCpId, setDeleteCpId] = useState<string | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [deleteSaving, setDeleteSaving] = useState(false);
+
+  // iOS wiggle mode
+  const [wiggleMode, setWiggleMode] = useState(false);
+  const [_wiggleCpId, setWiggleCpId] = useState<string | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragSrcIdx = useRef<number | null>(null);
+
+  const startLongPress = (cpId: string) => {
+    longPressTimer.current = setTimeout(() => {
+      setWiggleMode(true);
+      setWiggleCpId(cpId);
+    }, 500);
+  };
+  const cancelLongPress = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  };
+
+  const handleDragStart = (idx: number) => { dragSrcIdx.current = idx; };
+  const handleDrop = async (targetIdx: number) => {
+    const src = dragSrcIdx.current;
+    if (src === null || src === targetIdx) return;
+    const reordered = [...checkpoints];
+    const [moved] = reordered.splice(src, 1);
+    reordered.splice(targetIdx, 0, moved);
+    setCheckpoints(reordered);
+    // persist new order
+    await Promise.all(reordered.map((cp, i) =>
+      updateCheckpoint(event.id, stage.id, cp.id, { order: i } as any)
+    ));
+    dragSrcIdx.current = null;
+  };
 
   const [statusChanging, setStatusChanging] = useState(false);
   const [statusError, setStatusError] = useState('');
@@ -261,14 +291,70 @@ export default function StageDetail({ event, stage: initialStage, onBack, onStag
           </div>
         )}
 
-        {/* Seznam checkpointů */}
+        {/* Seznam checkpointů — iOS wiggle mode */}
+        {wiggleMode && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <button
+              onClick={() => { setWiggleMode(false); setWiggleCpId(null); setEditCp(null); }}
+              style={{ background: 'var(--accent-glow)', border: '1px solid rgba(124,58,237,0.4)', borderRadius: 20, padding: '6px 18px', color: 'var(--accent-bright)', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+            >
+              Hotovo
+            </button>
+          </div>
+        )}
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {checkpoints.map((cp, i) => (
-            <div key={cp.id}>
+            <div key={cp.id}
+              draggable={wiggleMode}
+              onDragStart={() => handleDragStart(i)}
+              onDragOver={e => e.preventDefault()}
+              onDrop={() => handleDrop(i)}
+            >
               <div
-                onClick={() => handleCheckpointClick(cp)}
-                style={{ background: selectedCheckpointId === cp.id ? 'rgba(124,58,237,0.15)' : 'var(--bg-secondary)', border: '1px solid var(--border)', borderLeft: selectedCheckpointId === cp.id ? '3px solid #7c3aed' : '1px solid var(--border)', borderRadius: editCp?.id === cp.id ? '12px 12px 0 0' : 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                className={wiggleMode ? 'wiggle' : ''}
+                onMouseDown={() => !wiggleMode && startLongPress(cp.id)}
+                onMouseUp={cancelLongPress}
+                onMouseLeave={cancelLongPress}
+                onTouchStart={() => !wiggleMode && startLongPress(cp.id)}
+                onTouchEnd={cancelLongPress}
+                onTouchMove={cancelLongPress}
+                onClick={() => {
+                  cancelLongPress();
+                  if (wiggleMode) {
+                    setEditCp({ id: cp.id, name: cp.name, code: cp.code || '', radius: cp.radius });
+                  } else {
+                    handleCheckpointClick(cp);
+                  }
+                }}
+                style={{
+                  position: 'relative',
+                  background: selectedCheckpointId === cp.id ? 'rgba(124,58,237,0.15)' : 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                  borderLeft: selectedCheckpointId === cp.id ? '3px solid #7c3aed' : '1px solid var(--border)',
+                  borderRadius: editCp?.id === cp.id ? '12px 12px 0 0' : 12,
+                  padding: '14px 16px',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  cursor: wiggleMode ? 'grab' : 'pointer',
+                  userSelect: 'none',
+                  animationDelay: `${i * 0.05}s`,
+                }}
               >
+                {/* iOS X badge */}
+                {wiggleMode && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setDeleteCpId(cp.id); setDeleteConfirmName(cp.name); setWiggleMode(false); }}
+                    style={{
+                      position: 'absolute', top: -8, left: -8, zIndex: 10,
+                      width: 22, height: 22, borderRadius: '50%',
+                      background: '#dc2626', border: '2px solid #fff',
+                      color: 'white', fontWeight: 900, fontSize: 13,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', lineHeight: 1, padding: 0,
+                    }}
+                  >✕</button>
+                )}
+
                 <div style={{ width: 34, height: 34, background: 'var(--accent-glow)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--accent-bright)', flexShrink: 0 }}>
                   {i + 1}
                 </div>
@@ -279,15 +365,12 @@ export default function StageDetail({ event, stage: initialStage, onBack, onStag
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{cp.name} · r={cp.radius}m</div>
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button onClick={(e) => { e.stopPropagation(); setEditCp(editCp?.id === cp.id ? null : { id: cp.id, name: cp.name, code: cp.code || '', radius: cp.radius }); }} style={{ background: editCp?.id === cp.id ? 'rgba(124,58,237,0.15)' : 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
-                    <Pencil size={14} />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); setDeleteCpId(cp.id); setDeleteConfirmName(cp.name); }} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center' }}>
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                {wiggleMode && (
+                  <div style={{ color: 'var(--text-muted)', fontSize: 18, cursor: 'grab' }}>≡</div>
+                )}
               </div>
+
+              {/* Inline edit — otevře se tapem v wiggle mode */}
               {editCp?.id === cp.id && (
                 <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '12px 16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
