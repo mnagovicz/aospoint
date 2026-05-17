@@ -167,35 +167,28 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         </div>
 
         {/* Jízdní výkaz — celá šířka */}
-        <div style={{ padding: '8px 16px 10px', overflowX: 'auto' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Jízdní výkaz</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ padding: '8px 16px 12px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Jízdní výkaz</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {[0, 1, 2].map(rowIdx => {
               const recorded = passages.filter(p => p.action === 'recorded');
               const p = recorded[rowIdx];
               const cp = p ? checkpoints.find(c => c.id === p.checkpointId) : null;
               const name = cp?.code || cp?.name || '';
+              const chars = name.length > 0 ? name.split('') : Array.from({ length: 6 }).map(() => '');
               return (
-                <div key={rowIdx} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                  {name.length > 0
-                    ? name.split('').map((char, ci) => (
-                        <div key={ci} style={{
-                          width: 26, height: 26, flexShrink: 0,
-                          border: '1.5px solid var(--accent-bright)',
-                          borderRadius: 4,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: 'white',
-                        }}>{char}</div>
-                      ))
-                    : Array.from({ length: 6 }).map((_, ci) => (
-                        <div key={ci} style={{
-                          width: 26, height: 26, flexShrink: 0,
-                          border: '1.5px solid var(--border)',
-                          borderRadius: 4,
-                          opacity: 0.3,
-                        }} />
-                      ))
-                  }
+                <div key={rowIdx} style={{ display: 'flex', gap: 6 }}>
+                  {chars.map((char, ci) => (
+                    <div key={ci} style={{
+                      flex: 1,
+                      height: 52,
+                      border: `1.5px solid ${char ? 'var(--accent-bright)' : 'var(--border)'}`,
+                      borderRadius: 6,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'monospace', fontWeight: 800, fontSize: 24, color: 'white',
+                      opacity: char ? 1 : 0.3,
+                    }}>{char}</div>
+                  ))}
                 </div>
               );
             })}

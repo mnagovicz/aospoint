@@ -115,21 +115,25 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
       {/* Jízdní výkaz */}
       <div style={{ flexShrink: 0, borderBottom: '1px solid #1a1a2e', padding: '8px 16px', background: 'rgba(10,10,15,0.96)' }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Jízdní výkaz</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[0, 1, 2].map(rowIdx => {
             const p = recorded[rowIdx];
             const cp = p ? checkpoints.find(c => c.id === p.checkpointId) : null;
             const name = cp?.code || cp?.name || '';
+            const chars = name.length > 0 ? name.split('') : Array.from({ length: 6 }).map(() => '');
             return (
-              <div key={rowIdx} style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                {name.length > 0
-                  ? name.split('').map((char, ci) => (
-                      <div key={ci} style={{ width: 26, height: 26, flexShrink: 0, border: '1.5px solid #4ecca3', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: 'white' }}>{char}</div>
-                    ))
-                  : Array.from({ length: 6 }).map((_, ci) => (
-                      <div key={ci} style={{ width: 26, height: 26, flexShrink: 0, border: '1.5px solid #1a1a2e', borderRadius: 4, opacity: 0.4 }} />
-                    ))
-                }
+              <div key={rowIdx} style={{ display: 'flex', gap: 6 }}>
+                {chars.map((char, ci) => (
+                  <div key={ci} style={{
+                    flex: 1,
+                    height: 52,
+                    border: `1.5px solid ${char ? '#4ecca3' : '#1a1a2e'}`,
+                    borderRadius: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: 'monospace', fontWeight: 800, fontSize: 24, color: 'white',
+                    opacity: char ? 1 : 0.4,
+                  }}>{char}</div>
+                ))}
               </div>
             );
           })}
