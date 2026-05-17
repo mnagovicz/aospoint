@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Navigation, CheckCircle, XCircle, Radio, WifiOff } from 'lucide-react';
+import { MapPin, Navigation, CheckCircle, XCircle, Radio, WifiOff, Satellite, Map } from 'lucide-react';
 import { type Checkpoint, recordPassage } from '../../api';
 import { playBeep, vibrate } from '../../utils/audio';
 import { useGPS } from '../../hooks/useGPS';
@@ -92,6 +92,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   const [dialog, setDialog] = useState<CheckpointDialogState | null>(null);
   const [passages, setPassages] = useState<{ checkpointId: string; action: string; timestamp: string }[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [mapType, setMapType] = useState<'basic' | 'aerial'>('basic');
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync pending passages on mount
@@ -251,7 +252,8 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         zoomControl={false}
       >
         <TileLayer
-          url={`https://api.mapy.com/v1/maptiles/basic/256/{z}/{x}/{y}?apikey=${import.meta.env.VITE_MAPY_API_KEY}`}
+          key={mapType}
+          url={`https://api.mapy.com/v1/maptiles/${mapType}/256/{z}/{x}/{y}?apikey=${import.meta.env.VITE_MAPY_API_KEY}`}
           minZoom={0}
           maxZoom={20}
           attribution='© <a href="https://www.seznam.cz" target="_blank">Seznam.cz a.s.</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
@@ -277,6 +279,32 @@ export default function RacingScreen({ session, checkpoints }: Props) {
           </>
         )}
       </MapContainer>
+
+      {/* Map type toggle */}
+      <div
+        className="absolute z-50"
+        style={{ bottom: 24, right: 16 }}
+      >
+        <button
+          onClick={() => setMapType(prev => prev === 'basic' ? 'aerial' : 'basic')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'rgba(10,10,15,0.92)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            padding: '10px 16px',
+            color: 'var(--accent-bright)',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+          }}
+        >
+          {mapType === 'basic' ? <><Satellite size={16} /> Letecká</> : <><Map size={16} /> Mapa</>}
+        </button>
+      </div>
 
       {/* Syncing indicator */}
       {syncing && (
