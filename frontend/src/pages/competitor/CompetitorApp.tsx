@@ -38,7 +38,7 @@ export default function CompetitorApp() {
 
   const handleLogin = async () => {
     if (!eventCode || !raceNumber) {
-      setError('Vyplňte kód eventu a závodní číslo');
+      setError('Vyplňte kód soutěže a závodní číslo');
       return;
     }
     setLoading(true);
@@ -46,7 +46,7 @@ export default function CompetitorApp() {
     try {
       const events = await listEvents(eventCode.toUpperCase());
       if (!events || events.length === 0) {
-        setError('Neplatný kód eventu');
+        setError('Neplatný kód soutěže');
         return;
       }
       const ev = events[0];
@@ -140,7 +140,7 @@ export default function CompetitorApp() {
                     marginBottom: 8,
                   }}
                 >
-                  Kód eventu
+                  Kód soutěže
                 </label>
                 <input
                   type="text"
@@ -271,7 +271,7 @@ export default function CompetitorApp() {
           >
             Čekáme na start
           </h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 6 }}>Event ještě nezačal</p>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 6 }}>Soutěž ještě nezačala</p>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 32 }}>
             Posádka:{' '}
             <span style={{ color: 'var(--accent-bright)', fontWeight: 600 }}>

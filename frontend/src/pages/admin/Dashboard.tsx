@@ -8,8 +8,8 @@ type View = 'list' | 'new' | 'detail';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; dot?: string }> = {
   active: { label: '● Aktivní', bg: 'var(--success-glow)', color: 'var(--success)', dot: 'var(--success)' },
-  finished: { label: 'Dokončen', bg: 'rgba(124,58,237,0.15)', color: 'var(--accent-bright)' },
-  draft: { label: 'Draft', bg: 'var(--bg-tertiary)', color: 'var(--text-muted)' },
+  finished: { label: 'Dokončena', bg: 'rgba(124,58,237,0.15)', color: 'var(--accent-bright)' },
+  draft: { label: 'Příprava', bg: 'var(--bg-tertiary)', color: 'var(--text-muted)' },
 };
 
 export default function Dashboard() {
@@ -72,7 +72,7 @@ export default function Dashboard() {
                 letterSpacing: '-0.02em',
               }}
             >
-              Moje eventy
+              Moje soutěže
             </h1>
           </div>
           <button
@@ -128,8 +128,8 @@ export default function Dashboard() {
             >
               <Trophy size={28} color="var(--text-muted)" />
             </div>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>Žádné eventy</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Vytvořte svůj první event</p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>Žádné soutěže</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Vytvořte svoji první soutěž</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

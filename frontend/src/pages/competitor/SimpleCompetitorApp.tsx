@@ -36,7 +36,7 @@ export default function SimpleCompetitorApp() {
 
   const handleLogin = async () => {
     if (!eventCode || !raceNumber) {
-      setError('Vyplňte kód eventu a závodní číslo');
+      setError('Vyplňte kód soutěže a závodní číslo');
       return;
     }
     setLoading(true);
@@ -44,7 +44,7 @@ export default function SimpleCompetitorApp() {
     try {
       const events = await listEvents(eventCode.toUpperCase());
       if (!events || events.length === 0) {
-        setError('Neplatný kód eventu');
+        setError('Neplatný kód soutěže');
         return;
       }
       const ev = events[0];
@@ -88,7 +88,7 @@ export default function SimpleCompetitorApp() {
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Kód eventu</label>
+            <label className="block text-sm text-gray-400 mb-1">Kód soutěže</label>
             <input
               type="text"
               value={eventCode}

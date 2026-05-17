@@ -14,14 +14,14 @@ export default function NewEventForm({ onCreated, onCancel }: Props) {
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    if (!name) { setError('Zadejte název eventu'); return; }
+    if (!name) { setError('Zadejte název soutěže'); return; }
     setLoading(true);
     try {
       const ev = await createEvent(name, date);
       if (ev.error) { setError(ev.error); return; }
       onCreated(ev);
     } catch {
-      setError('Chyba při vytváření eventu');
+      setError('Chyba při vytváření soutěže');
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export default function NewEventForm({ onCreated, onCancel }: Props) {
         >
           ←
         </button>
-        <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.01em' }}>Nový event</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.01em' }}>Nová soutěž</h2>
       </div>
 
       <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 20px' }}>
@@ -75,7 +75,7 @@ export default function NewEventForm({ onCreated, onCancel }: Props) {
                 marginBottom: 8,
               }}
             >
-              Název eventu
+              Název soutěže
             </label>
             <input
               type="text"
@@ -131,7 +131,7 @@ export default function NewEventForm({ onCreated, onCancel }: Props) {
             style={{ minHeight: 52 }}
           >
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {loading ? '⟳ Vytvářím...' : <><Plus size={18} /> Vytvořit event</>}
+              {loading ? '⟳ Vytvářím...' : <><Plus size={18} /> Vytvořit soutěž</>}
             </span>
           </button>
         </div>
