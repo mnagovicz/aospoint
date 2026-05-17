@@ -64,7 +64,6 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   const [passages, setPassages] = useState<{ checkpointId: string; action: string; timestamp: string }[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [mapType, setMapType] = useState<'basic' | 'aerial'>('basic');
-  const [activeTab, setActiveTab] = useState<'map' | 'log'>('map');
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync pending passages on mount
@@ -137,106 +136,65 @@ export default function RacingScreen({ session, checkpoints }: Props) {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
-      {/* Header */}
-      <div
-        style={{
-          flexShrink: 0,
-          background: 'rgba(10,10,15,0.96)',
-          borderBottom: '1px solid var(--border)',
-          padding: '12px 16px',
-          zIndex: 50,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+
+      {/* Top panel: stavové info (1/3) + jízdní výkaz (2/3) */}
+      <div style={{ flexShrink: 0, display: 'flex', borderBottom: '1px solid var(--border)', background: 'rgba(10,10,15,0.96)', zIndex: 50, maxHeight: '35vh' }}>
+
+        {/* Stavové info — 1/3 šířky */}
+        <div style={{ flex: 1, borderRight: '1px solid var(--border)', padding: '12px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: 'white' }}>
-              {session.competitorName}{' '}
-              <span
-                style={{
-                  color: 'var(--accent-bright)',
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                }}
-              >
-                #{session.competitorNumber}
-              </span>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {session.competitorName}
             </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: gpsError ? 'var(--danger)' : position ? 'var(--success)' : 'var(--text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                marginTop: 2,
-              }}
-            >
-              {gpsError ? (
-                <><WifiOff size={11} /> {gpsError}</>
-              ) : position ? (
-                <><Navigation size={11} /> GPS ±{Math.round(position.accuracy)}m</>
-              ) : (
-                <><Radio size={11} /> Hledám GPS...</>
-              )}
+            <div style={{ color: 'var(--accent-bright)', fontFamily: 'monospace', fontWeight: 600, fontSize: 13 }}>
+              #{session.competitorNumber}
+            </div>
+            <div style={{ fontSize: 11, color: gpsError ? 'var(--danger)' : position ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3, marginTop: 6 }}>
+              {gpsError ? <><WifiOff size={10} /> GPS chyba</> : position ? <><Navigation size={10} /> ±{Math.round(position.accuracy)}m</> : <><Radio size={10} /> GPS...</>}
             </div>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Live badge */}
-            <div className="badge-success" style={{ fontSize: 11, padding: '3px 10px' }}>
-              <span className="live-dot" />
-              LIVE
+          <div>
+            <div className="badge-success" style={{ fontSize: 10, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+              <span className="live-dot" /> LIVE
             </div>
-            {/* CP counter */}
-            <div style={{ textAlign: 'right' }}>
-              <div
-                className="tabular-nums"
-                style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}
-              >
-                <span style={{ color: 'var(--accent-bright)' }}>{totalPassages}</span>
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                průjezdů
-              </div>
+            <div className="tabular-nums" style={{ fontSize: 26, fontWeight: 800, lineHeight: 1, color: 'var(--accent-bright)' }}>{totalPassages}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>průjezdů</div>
+            <div className="progress-bar" style={{ marginTop: 8 }}>
+              <div className="progress-fill" style={{ width: `${progressPct}%` }} />
             </div>
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+        {/* Jízdní výkaz — 2/3 šířky */}
+        <div style={{ flex: 2, overflowY: 'auto', padding: '10px 12px', minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>📋 Jízdní výkaz</div>
+          {passages.filter(p => p.action === 'recorded').length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, paddingTop: 8 }}>Zatím žádné průjezdy</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {passages.filter(p => p.action === 'recorded').map((p, i) => {
+                const cp = checkpoints.find(c => c.id === p.checkpointId);
+                const timeStr = new Date(p.timestamp).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px' }}>
+                    <div style={{ color: 'var(--success)', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>✓</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: 'white', fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cp?.name ?? '?'}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>#{i + 1} · {timeStr}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Tab bar */}
-      <div style={{ flexShrink: 0, display: 'flex', borderBottom: '1px solid var(--border)', background: 'rgba(10,10,15,0.96)', zIndex: 49 }}>
-        {(['map', 'log'] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              flex: 1,
-              padding: '10px 0',
-              fontSize: 13,
-              fontWeight: 600,
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === tab ? '2px solid var(--accent-bright)' : '2px solid transparent',
-              color: activeTab === tab ? 'var(--accent-bright)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              letterSpacing: '0.03em',
-            }}
-          >
-            {tab === 'map' ? '🗺️ Mapa' : '📋 Jízdní výkaz'}
-          </button>
-        ))}
       </div>
 
       {/* Map */}
       <MapContainer
         center={defaultCenter}
         zoom={14}
-        style={{ flex: activeTab === 'map' ? 1 : 0, minHeight: 0, width: '100%', display: activeTab === 'map' ? undefined : 'none' }}
+        style={{ flex: 1, minHeight: 0, width: '100%' }}
         zoomControl={false}
       >
         <TileLayer
@@ -268,60 +226,8 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         )}
       </MapContainer>
 
-      {/* Jízdní výkaz */}
-      {activeTab === 'log' && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: 'var(--bg-primary)' }}>
-          {passages.filter(p => p.action === 'recorded').length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48 }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
-              <div style={{ fontSize: 14 }}>Zatím žádné potvrzené průjezdy</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {passages
-                .filter(p => p.action === 'recorded')
-                .map((p, i) => {
-                  const cp = checkpoints.find(c => c.id === p.checkpointId);
-                  const time = new Date(p.timestamp);
-                  const timeStr = time.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 14,
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 12,
-                        padding: '12px 16px',
-                      }}
-                    >
-                      <div style={{
-                        width: 36, height: 36, borderRadius: '50%',
-                        background: 'rgba(16,185,129,0.15)',
-                        border: '1px solid rgba(16,185,129,0.4)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0, color: 'var(--success)', fontWeight: 700, fontSize: 18,
-                      }}>✓</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, color: 'white', fontSize: 15 }}>
-                          {cp?.name ?? 'Neznámý checkpoint'}
-                        </div>
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                          Průjezd #{i + 1} · {timeStr}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Map type toggle — only on map tab */}
-      {activeTab === 'map' && <div
+      {/* Map type toggle */}
+      <div
         className="absolute z-50"
         style={{ bottom: 24, right: 16 }}
       >
@@ -344,7 +250,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         >
           {mapType === 'basic' ? <><Satellite size={16} /> Letecká</> : <><Map size={16} /> Mapa</>}
         </button>
-      </div>}
+      </div>
 
       {/* Syncing indicator */}
       {syncing && (
