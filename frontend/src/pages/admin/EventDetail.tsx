@@ -358,7 +358,11 @@ export default function EventDetail({ event, onBack }: Props) {
                       ref={(ref) => { markerRefs.current[cp.id] = ref; }}
                     >
                       <Popup>
-                        <strong>{cp.name}</strong><br />r = {cp.radius} m
+                        <div style={{ textAlign: 'center', minWidth: 60 }}>
+                          {cp.code && <div style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 22, letterSpacing: '0.05em' }}>{cp.code}</div>}
+                          <div style={{ fontSize: 12, color: '#666', marginTop: cp.code ? 2 : 0 }}>{cp.name}</div>
+                          <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>r = {cp.radius} m</div>
+                        </div>
                       </Popup>
                     </Marker>
                     <Circle
