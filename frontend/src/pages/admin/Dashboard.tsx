@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, ChevronRight, Trophy, Map } from 'lucide-react';
-import { listEvents, type Event } from '../../api';
+import { listEvents, deleteEvent, type Event } from '../../api';
 import EventDetail from './EventDetail';
 import NewEventForm from './NewEventForm';
 
@@ -17,6 +17,19 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('list');
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Event | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteEvent = async (ev: Event) => {
+    setDeleting(true);
+    try {
+      await deleteEvent(ev.id);
+      setDeleteConfirm(null);
+      loadEvents();
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const loadEvents = async () => {
     setLoading(true);

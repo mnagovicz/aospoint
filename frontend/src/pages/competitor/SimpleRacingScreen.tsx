@@ -26,7 +26,7 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
   const { position, error: gpsError } = useGPS();
   const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
   const [dialog, setDialog] = useState<CheckpointDialogState | null>(null);
-  const [passages, setPassages] = useState<{ checkpointId: string; action: string; timestamp: string }[]>([]);
+  const [passages, setPassages] = useState<{ checkpointId: string; action: 'recorded' | 'ignored'; timestamp: string }[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [finished, setFinished] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -36,7 +36,7 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
     if (pending.length > 0) {
       setSyncing(true);
       Promise.all(
-        pending.map(p => recordPassage(p.competitorId, p.checkpointId, p.action, p.competitorCode, p.timestamp))
+        pending.map(p => recordPassage(p.competitorId, p.checkpointId, p.stageId || '', p.action, p.competitorCode, p.timestamp))
       ).then(() => { clearPendingPassages(); setSyncing(false); }).catch(() => setSyncing(false));
     }
   }, []);
@@ -73,9 +73,9 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
     const timestamp = new Date().toISOString();
     setPassages(prev => [...prev, { checkpointId: cp.id, action, timestamp }]);
     try {
-      await recordPassage(session.competitorId, cp.id, action, session.competitorCode, timestamp);
+      await recordPassage(session.competitorId, cp.id, '', action, session.competitorCode, timestamp);
     } catch {
-      savePendingPassage({ competitorId: session.competitorId, checkpointId: cp.id, action, competitorCode: session.competitorCode, timestamp });
+      savePendingPassage({ competitorId: session.competitorId, checkpointId: cp.id, stageId: '', action, competitorCode: session.competitorCode, timestamp });
     }
   }, [session]);
 

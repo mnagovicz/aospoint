@@ -40,6 +40,7 @@ export interface Competitor {
   name: string;
   number: string | number;
   vehicle?: string;
+  accessCode?: string;
   stageCodes?: Record<string, string>;
   createdAt: string;
 }
@@ -114,8 +115,12 @@ export const deleteStage = (eventId: string, stageId: string) =>
   }).then((r) => r.json());
 
 // ── Checkpoints (per stage) ───────────────────────────────
-export const listCheckpoints = (eventId: string, stageId: string): Promise<Checkpoint[]> =>
-  fetch(`${API_URL}/events/${eventId}/stages/${stageId}/checkpoints`, { headers: jsonHeaders() }).then((r) => r.json());
+export const listCheckpoints = (eventId: string, stageId?: string): Promise<Checkpoint[]> => {
+  const url = stageId
+    ? `${API_URL}/events/${eventId}/stages/${stageId}/checkpoints`
+    : `${API_URL}/events/${eventId}/checkpoints`;
+  return fetch(url, { headers: jsonHeaders() }).then((r) => r.json());
+};
 
 export const createCheckpoint = (
   eventId: string,

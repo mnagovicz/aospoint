@@ -30,13 +30,18 @@ export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-export function saveCheckpoints(eventId: string, stageId: string, checkpoints: Checkpoint[]) {
-  localStorage.setItem(`${CHECKPOINTS_KEY}_${eventId}_${stageId}`, JSON.stringify(checkpoints));
+export function saveCheckpoints(eventId: string, stageIdOrCheckpoints: string | Checkpoint[], checkpoints?: Checkpoint[]) {
+  if (typeof stageIdOrCheckpoints === 'string') {
+    localStorage.setItem(`${CHECKPOINTS_KEY}_${eventId}_${stageIdOrCheckpoints}`, JSON.stringify(checkpoints));
+  } else {
+    localStorage.setItem(`${CHECKPOINTS_KEY}_${eventId}`, JSON.stringify(stageIdOrCheckpoints));
+  }
 }
 
-export function loadCheckpoints(eventId: string, stageId: string): Checkpoint[] {
+export function loadCheckpoints(eventId: string, stageId?: string): Checkpoint[] {
   try {
-    const s = localStorage.getItem(`${CHECKPOINTS_KEY}_${eventId}_${stageId}`);
+    const key = stageId ? `${CHECKPOINTS_KEY}_${eventId}_${stageId}` : `${CHECKPOINTS_KEY}_${eventId}`;
+    const s = localStorage.getItem(key);
     return s ? JSON.parse(s) : [];
   } catch {
     return [];
@@ -46,7 +51,7 @@ export function loadCheckpoints(eventId: string, stageId: string): Checkpoint[] 
 interface PendingPassage {
   competitorId: string;
   checkpointId: string;
-  stageId: string;
+  stageId?: string;
   action: 'recorded' | 'ignored';
   competitorCode: string;
   timestamp: string;

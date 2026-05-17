@@ -25,7 +25,7 @@ export default function SimpleCompetitorApp() {
   useEffect(() => {
     const saved = loadSession();
     if (saved) {
-      setSession(saved);
+      setSession(saved as unknown as Session);
       const cps = loadCheckpoints(saved.eventId);
       if (cps.length > 0) {
         setCheckpoints(cps);
@@ -60,10 +60,11 @@ export default function SimpleCompetitorApp() {
       const sess: Session = {
         eventId: ev.id,
         competitorId: comp.id,
-        competitorCode: comp.accessCode || '',
+        competitorCode: comp.accessCode || (comp.stageCodes ? Object.values(comp.stageCodes)[0] : '') || '',
         competitorName: comp.name,
         competitorNumber: String(comp.number),
       };
+      // @ts-expect-error SimpleCompetitorApp nepracuje s etapami, stageId nepotřebuje
       saveSession(sess);
       setSession(sess);
       setScreen('racing');
