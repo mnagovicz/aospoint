@@ -12,34 +12,49 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const COOLDOWN_MS = 120_000; // 2 minutes between passages at the same checkpoint
-const RETRIGGER_GAP_MS = 30_000; // prevent double-trigger while standing inside the radius
+// Prevent double-trigger while physically standing inside the radius
+const RETRIGGER_GAP_MS = 10_000;
 
 export function useGeofence(
   position: GPSPosition | null,
   checkpoints: Checkpoint[],
   cooldowns: Record<string, number>,
-  onTrigger: (checkpoint: Checkpoint) => void
+  onTrigger: (checkpoint: Checkpoint) => void,
+  onExitGeofence?: (checkpointId: string) => void
 ) {
   const lastTriggeredRef = useRef<Map<string, number>>(new Map());
+  // Tracks which checkpoints the competitor is currently inside
+  const insideRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!position) return;
     const now = Date.now();
 
     for (const cp of checkpoints) {
-      // Skip if within user-facing cooldown (set after each passage action)
-      if (cooldowns[cp.id] && now - cooldowns[cp.id] < COOLDOWN_MS) continue;
-
-      // Skip if we already triggered this CP recently (prevent double-trigger inside radius)
-      const lastTrigger = lastTriggeredRef.current.get(cp.id) || 0;
-      if (now - lastTrigger < RETRIGGER_GAP_MS) continue;
-
       const dist = haversineDistance(position.lat, position.lng, cp.lat, cp.lng);
-      if (dist <= cp.radius) {
+      const isInside = dist <= cp.radius;
+      const wasInside = insideRef.current.has(cp.id);
+
+      if (isInside && !wasInside) {
+        // Entered geofence
+        insideRef.current.add(cp.id);
+
+        // Skip if still in cooldown (dialog already shown, waiting for exit+reentry)
+        if (cooldowns[cp.id]) continue;
+
+        // Skip if triggered too recently (double-trigger guard)
+        const lastTrigger = lastTriggeredRef.current.get(cp.id) || 0;
+        if (now - lastTrigger < RETRIGGER_GAP_MS) continue;
+
         lastTriggeredRef.current.set(cp.id, now);
         onTrigger(cp);
+      } else if (!isInside && wasInside) {
+        // Exited geofence — reset cooldown so re-entry triggers dialog again
+        insideRef.current.delete(cp.id);
+        if (cooldowns[cp.id]) {
+          onExitGeofence?.(cp.id);
+        }
       }
     }
-  }, [position, checkpoints, cooldowns, onTrigger]);
+  }, [position, checkpoints, cooldowns, onTrigger, onExitGeofence]);
 }

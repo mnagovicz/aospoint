@@ -88,7 +88,15 @@ export default function RacingScreen({ session, checkpoints }: Props) {
     setDialog({ checkpoint: cp, countdown: 15 });
   }, []);
 
-  useGeofence(position, checkpoints, cooldowns, openDialog);
+  const handleExitGeofence = useCallback((checkpointId: string) => {
+    setCooldowns(prev => {
+      const next = { ...prev };
+      delete next[checkpointId];
+      return next;
+    });
+  }, []);
+
+  useGeofence(position, checkpoints, cooldowns, openDialog, handleExitGeofence);
 
   // Countdown
   useEffect(() => {
