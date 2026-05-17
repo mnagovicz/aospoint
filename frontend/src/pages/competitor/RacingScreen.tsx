@@ -147,14 +147,12 @@ export default function RacingScreen({ session, checkpoints }: Props) {
     }
     const cp = checkpoints.find(c => c.id === p.checkpointId);
     if (cp?.type === 'PK') return;
-    const afterPassages = recorded.slice(passageIdx + 1);
-    const hasLaterPK = afterPassages.some(ap => {
-      const acp = checkpoints.find(c => c.id === ap.checkpointId);
-      return acp?.type === 'PK';
-    });
-    if (hasLaterPK) { alert('SPK před zapsanou PK nelze smazat.'); return; }
     try {
-      await deletePassage(p.id, session.competitorCode);
+      const result = await deletePassage(p.id, session.competitorCode);
+      if (result?.error) {
+        alert(result.error);
+        return;
+      }
       setPassages(prev => prev.filter(pp => pp.id !== p.id));
     } catch {
       alert('Nepodařilo se smazat průjezd.');
@@ -256,8 +254,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
                     const name = cp?.code || cp?.name || '';
                     const chars = name.split('');
                     const isPK = cp?.type === 'PK';
-                    const hasLaterPK = recorded.slice(rowIdx + 1).some(ap => checkpoints.find(c => c.id === ap.checkpointId)?.type === 'PK');
-                    const canDelete = !isPK && !hasLaterPK;
+                    const canDelete = !isPK;
                     return (
                       <div key={rowIdx} style={{ display: 'flex', gap: 3, position: 'relative', cursor: canDelete ? 'pointer' : 'default' }}
                         onClick={() => canDelete && setDeleteConfirm({ idx: rowIdx, name })}
@@ -265,7 +262,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
                         {chars.map((char, ci) => (
                           <div key={ci} style={{
                             width: 34, height: 34, flexShrink: 0,
-                            border: `1.5px solid ${isPK ? '#a78bfa' : hasLaterPK ? '#6b7280' : 'var(--accent-bright)'}`,
+                            border: `1.5px solid ${isPK ? '#a78bfa' : 'var(--accent-bright)'}`,
                             borderRadius: 5,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontFamily: 'monospace', fontWeight: 800, fontSize: 17, color: 'white',
