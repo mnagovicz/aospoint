@@ -93,6 +93,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
   const [passages, setPassages] = useState<{ checkpointId: string; action: string; timestamp: string }[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [mapType, setMapType] = useState<'basic' | 'aerial'>('basic');
+  const [activeTab, setActiveTab] = useState<'map' | 'log'>('map');
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync pending passages on mount
@@ -244,11 +245,35 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         </div>
       </div>
 
+      {/* Tab bar */}
+      <div style={{ flexShrink: 0, display: 'flex', borderBottom: '1px solid var(--border)', background: 'rgba(10,10,15,0.96)', zIndex: 49 }}>
+        {(['map', 'log'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              flex: 1,
+              padding: '10px 0',
+              fontSize: 13,
+              fontWeight: 600,
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === tab ? '2px solid var(--accent-bright)' : '2px solid transparent',
+              color: activeTab === tab ? 'var(--accent-bright)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              letterSpacing: '0.03em',
+            }}
+          >
+            {tab === 'map' ? '🗺️ Mapa' : '📋 Jízdní výkaz'}
+          </button>
+        ))}
+      </div>
+
       {/* Map */}
       <MapContainer
         center={defaultCenter}
         zoom={14}
-        style={{ flex: 1, minHeight: 0, width: '100%' }}
+        style={{ flex: activeTab === 'map' ? 1 : 0, minHeight: 0, width: '100%', display: activeTab === 'map' ? undefined : 'none' }}
         zoomControl={false}
       >
         <TileLayer
@@ -280,8 +305,60 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         )}
       </MapContainer>
 
-      {/* Map type toggle */}
-      <div
+      {/* Jízdní výkaz */}
+      {activeTab === 'log' && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px', background: 'var(--bg-primary)' }}>
+          {passages.filter(p => p.action === 'recorded').length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 48 }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
+              <div style={{ fontSize: 14 }}>Zatím žádné potvrzené průjezdy</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {passages
+                .filter(p => p.action === 'recorded')
+                .map((p, i) => {
+                  const cp = checkpoints.find(c => c.id === p.checkpointId);
+                  const time = new Date(p.timestamp);
+                  const timeStr = time.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 14,
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 12,
+                        padding: '12px 16px',
+                      }}
+                    >
+                      <div style={{
+                        width: 36, height: 36, borderRadius: '50%',
+                        background: 'rgba(16,185,129,0.15)',
+                        border: '1px solid rgba(16,185,129,0.4)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0, color: 'var(--success)', fontWeight: 700, fontSize: 18,
+                      }}>✓</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: 'white', fontSize: 15 }}>
+                          {cp?.name ?? 'Neznámý checkpoint'}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                          Průjezd #{i + 1} · {timeStr}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Map type toggle — only on map tab */}
+      {activeTab === 'map' && <div
         className="absolute z-50"
         style={{ bottom: 24, right: 16 }}
       >
@@ -304,7 +381,7 @@ export default function RacingScreen({ session, checkpoints }: Props) {
         >
           {mapType === 'basic' ? <><Satellite size={16} /> Letecká</> : <><Map size={16} /> Mapa</>}
         </button>
-      </div>
+      </div>}
 
       {/* Syncing indicator */}
       {syncing && (
