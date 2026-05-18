@@ -31,6 +31,27 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
   const [syncing, setSyncing] = useState(false);
   const [finished, setFinished] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
+  // Wake Lock — zabrání zhasnutí obrazovky
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+        }
+      } catch { /* ignorovat — starší prohlížeče bez podpory */ }
+    };
+    requestWakeLock();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      wakeLockRef.current?.release();
+    };
+  }, []);
 
   // iOS wiggle mode pro výkaz
   const [wiggleMode, setWiggleMode] = useState(false);
