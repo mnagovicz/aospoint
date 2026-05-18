@@ -9,6 +9,7 @@ import { savePendingPassage, loadPendingPassages, clearPendingPassages, clearSes
 interface Props {
   session: {
     eventId: string;
+    stageId: string;
     competitorId: string;
     competitorCode: string;
     competitorName: string;
@@ -120,9 +121,9 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
     const timestamp = new Date().toISOString();
     setPassages(prev => [...prev, { checkpointId: cp.id, action, timestamp }]);
     try {
-      await recordPassage(session.competitorId, cp.id, '', action, session.competitorCode, timestamp);
+      await recordPassage(session.competitorId, cp.id, session.stageId, action, session.competitorCode, timestamp);
     } catch {
-      savePendingPassage({ competitorId: session.competitorId, checkpointId: cp.id, stageId: '', action, competitorCode: session.competitorCode, timestamp });
+      savePendingPassage({ competitorId: session.competitorId, checkpointId: cp.id, stageId: session.stageId, action, competitorCode: session.competitorCode, timestamp });
     }
   }, [session]);
 
