@@ -268,7 +268,7 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
                     border: `2px solid ${cp?.type === 'PK' ? '#a78bfa' : '#4ecca3'}`,
                     borderRadius: 7,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: 'monospace', fontWeight: 800, fontSize: 24, color: 'white',
+                    fontFamily: 'monospace', fontWeight: 800, fontSize: 44, lineHeight: 1, color: 'white',
                   }}>{char}</div>
                 ))}
               </div>
