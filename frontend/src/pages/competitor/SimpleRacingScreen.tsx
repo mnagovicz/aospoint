@@ -233,7 +233,7 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {recorded.map((p, idx) => {
             const cp = checkpoints.find(c => c.id === p.checkpointId);
             const code = localNames[idx] ?? (cp?.code || cp?.name || '?');
@@ -263,11 +263,11 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
                 )}
                 {code.split('').map((char, ci) => (
                   <div key={ci} style={{
-                    width: 36, height: 40, flexShrink: 0,
-                    border: `1.5px solid ${cp?.type === 'PK' ? '#a78bfa' : '#4ecca3'}`,
-                    borderRadius: 5,
+                    width: 52, height: 58, flexShrink: 0,
+                    border: `2px solid ${cp?.type === 'PK' ? '#a78bfa' : '#4ecca3'}`,
+                    borderRadius: 7,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: 'monospace', fontWeight: 800, fontSize: 18, color: 'white',
+                    fontFamily: 'monospace', fontWeight: 800, fontSize: 24, color: 'white',
                   }}>{char}</div>
                 ))}
               </div>
