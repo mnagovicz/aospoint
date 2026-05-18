@@ -234,7 +234,7 @@ export default function SimpleRacingScreen({ session, checkpoints }: Props) {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, userSelect: 'none', WebkitUserSelect: 'none' }}>
           {recorded.map((p, idx) => {
             const cp = checkpoints.find(c => c.id === p.checkpointId);
             const code = localNames[idx] ?? (cp?.code || cp?.name || '?');
